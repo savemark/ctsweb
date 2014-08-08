@@ -1,3 +1,130 @@
+#' Create a city
+#' 
+#' @param x Matrix (Nx2) with the coordinate of the nodes.
+#' @param adj Adjacency matrix (NxN)
+#' @param speed Matrix (NxN) with link speeds
+#' @param cost Numeric. Cost per km travelled.
+#' @return A list containing a graph with attributes, a OD time matrix and
+#' a OD cost matrix
+#' @import igraph
+#' @importFrom tripack tri.mesh voronoi.mosaic voronoi.area add.constraint
+#' @importFrom fields rdist
+#' @export
+
+create.city <- function(coordinate, adjacency, speed = 50, cost = 1.5) {
+  graph <- graph.empty()
+  graph <- graph.adjacency(adjacency, mode = "undirected")
+  
+  # zone area supply
+  tri <- tri.mesh(coordinate[, 1], coordinate[, 2])
+  #eps <- 1.5
+  #ch <- tripack::convex.hull(tri)
+  #expanded.chx <- sign(ch$x)*eps + ch$x
+  #expanded.chy <- sign(ch$y)*eps + ch$y
+  #tri <- add.constraint(tri, expanded.chx, expanded.chy, reverse = TRUE)
+  vm <- voronoi.mosaic(tri)
+  node.area.supply <- voronoi.area(vm)
+  node.area.supply[is.na(node.area.supply)] <- max(node.area.supply[!is.na(node.area.supply)]) # For simplicity
+  V(graph)$area.supply <- node.area.supply
+  
+  # link length
+  edge.length <- t(adjacency*rdist(coordinate))
+  E(graph)$length <- edge.length[edge.length > 0]
+  
+  # link speed
+  E(graph)$speed <- speed
+  
+  # link travel times
+  E(graph)$time <- E(graph)$length/E(graph)$speed
+  
+  # link cost
+  E(graph)$cost <- E(graph)$length*cost
+  
+  # area demand and price
+  V(graph)$area.demand <- NA
+  V(graph)$area.price <- NA
+  
+  time <- shortest.paths(graph, V(graph), weights = E(graph)$time)
+  cost <- shortest.paths(graph, V(graph), weights = E(graph)$cost)
+  return(
+    list(
+      coordinate = coordinate,
+      adjacency = adjacency,
+      graph = graph,
+      time = time,
+      cost = cost
+    )
+  )
+}
+
+#' Plot your city
+#' 
+#' @param x A city
+#' @return A plot of a graph and a voronoi diagram
+#' @import igraph
+#' @importFrom tripack tri.mesh voronoi.mosaic voronoi.area add.constraint
+#' @export
+
+plotcity <- function(x, Tij = NULL) {
+  graph <- x$graph
+  plot.layout <- x$coordinate
+  v <- length(V(graph))
+  vertex.color <- array("NA", dim = c(length(V(graph)), 1))
+  vertex.frame.color <- array("skyblue", dim = c(length(V(graph)), 1))
+  #vertex.frame.color[homecount < workcount] = "red"
+  vertex.size <- rep(1, v)
+  edge.color <- array("peachpuff", dim = c(length(E(graph)), 1))
+  edge.flow <- array(0, dim = c(length(E(graph)), 1))
+  edge.width <- array(1, dim = c(length(E(graph)), 1))
+  if (!is.null(Tij)) {
+    for (i in 1:v) {
+      for (j in 1:v) {
+        if(Tij[i, j] > 0 & i != j) {
+          edgelist <- get.shortest.paths(graph, i, j, output = "epath")$epath[[1]]
+          edge.color[edgelist] <- "LightSkyBlue"
+          edge.flow[edgelist] <- edge.flow[edgelist] + 1
+          edge.width[edgelist] <- edge.width[edgelist] + log(Tij[i, j])
+        }
+      }
+    }
+    graph <- set.edge.attribute(graph, "color", index = E(graph), edge.color)
+    graph <- set.vertex.attribute(graph, "frame.color", index = V(graph), vertex.frame.color)
+  }
+  xmin <- min(plot.layout[, 1])
+  xmax <- max(plot.layout[, 1])
+  ymin <- min(plot.layout[, 2])
+  ymax <- max(plot.layout[, 2])
+  midpointx <- xmax-abs(xmax-xmin)/2
+  midpointy <- ymax-abs(ymax-ymin)/2
+  tri <- tri.mesh((plot.layout[, 1]-midpointx)/(abs(xmax-xmin)/2), (plot.layout[, 2]-midpointy)/(abs(ymax-ymin)/2))
+  vm <- voronoi.mosaic(tri)
+  par(mar = c(0,0,0,0)+.1)
+  plot(graph,
+       layout = layout.norm(plot.layout),
+       #xmin = xmin,
+       #xmax = xmax,
+       #ymin = ymin,
+       #ymax = ymax), 
+       vertex.label = paste(V(graph), "\n", round(V(graph)$area.supply, 2)),
+       vertex.label.font = 1,
+       vertex.label.cex = 0.75,
+       vertex.label.degree = pi/2,
+       vertex.label.color = "black",
+       vertex.color = vertex.color,
+       vertex.frame.color = vertex.frame.color,
+       vertex.label.dist = 0,
+       vertex.size = vertex.size,
+       edge.color = edge.color,
+       edge.width = edge.width,
+       edge.curved = 0,
+       edge.arrow.size = 0.3,
+       #rescale = FALSE,
+       edge.label = paste(round(E(x$graph)$cost, 2), "\n", round(E(x$graph)$time, 2)),
+       edge.label.cex = 0.5
+  )
+  plot(vm, add = TRUE, col = "grey", pch = NA, xlim = c(1.05*minx, 1.05*maxx), ylim = c(1.05*miny, 1.05*maxy))
+}
+
 workerIncomeMatrix <- function(n, nodes, median, spread, days, h) {
   mean <- log(median)
   sd <- sqrt(2*(log(median*spread)-mean))
@@ -230,3 +357,5 @@ widerEconomicBenefits <- function(x, y) {
     return()
   }
 }
+
+#dfsane(P, fn = F, method = 2, control = list(M = 20), quiet = FALSE, supply = S, w = W, c = C, t = T)
