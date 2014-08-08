@@ -1,4 +1,5 @@
-library(ctsweb)
+library(tripack)
+library(fields)
 library(igraph)
 library(BB)
 library(plyr)
