@@ -300,11 +300,6 @@ simulationSummary = function(x, empty = FALSE) {
     u.lt = ltu,
     u.lu = luu,
     u.tc = tcu,
-    #du = du,
-    #du.y = du.y,
-    #du.lt = du.lt,
-    #du.lu = du.lu,
-    #du.tc = du.tc,
     income = inc,
     working.hours = ws,
     area.demand = ld
@@ -357,5 +352,3 @@ widerEconomicBenefits <- function(x, y) {
     return()
   }
 }
-
-#dfsane(P, fn = F, method = 2, control = list(M = 20), quiet = FALSE, supply = S, w = W, c = C, t = T)
