@@ -1,17 +1,9 @@
-#' Create a city
-#' 
-#' @param x Matrix (Nx2) with the coordinate of the nodes.
-#' @param adj Adjacency matrix (NxN)
-#' @param speed Matrix (NxN) with link speeds
-#' @param cost Numeric. Cost per km travelled.
-#' @return A list containing a graph with attributes, a OD time matrix and
-#' a OD cost matrix
-#' @import igraph
-#' @importFrom tripack tri.mesh voronoi.mosaic voronoi.area add.constraint
-#' @importFrom fields rdist
-#' @export
+library(igraph)
+library(tripack)
+library(fields)
 
-create.city <- function(coordinate, adjacency, speed = 50, cost = 1.5) {
+create.city <- function(coordinate, adjacency, speed, cost) {
+  v <- nrow(coordinate)
   graph <- graph.empty()
   graph <- graph.adjacency(adjacency, mode = "undirected")
   
@@ -24,12 +16,14 @@ create.city <- function(coordinate, adjacency, speed = 50, cost = 1.5) {
   #tri <- add.constraint(tri, expanded.chx, expanded.chy, reverse = TRUE)
   vm <- voronoi.mosaic(tri)
   node.area.supply <- voronoi.area(vm)
-  node.area.supply[is.na(node.area.supply)] <- max(node.area.supply[!is.na(node.area.supply)]) # For simplicity
+  node.area.supply[is.na(node.area.supply)] <- max(node.area.supply, na.rm = TRUE) # For simplicity
   V(graph)$area.supply <- node.area.supply
   
   # link length
-  edge.length <- t(adjacency*rdist(coordinate))
-  E(graph)$length <- edge.length[edge.length > 0]
+  edge.length <- adjacency*rdist(coordinate)
+  edge.length <- edge.length[lower.tri(edge.length)]
+  edge.length <- edge.length[edge.length > 0]
+  E(graph)$length <- edge.length
   
   # link speed
   E(graph)$speed <- speed
@@ -41,8 +35,8 @@ create.city <- function(coordinate, adjacency, speed = 50, cost = 1.5) {
   E(graph)$cost <- E(graph)$length*cost
   
   # area demand and price
-  V(graph)$area.demand <- NA
-  V(graph)$area.price <- NA
+  V(graph)$area.demand <- rep(NA, v)
+  V(graph)$area.price <- rep(NA, v)
   
   time <- shortest.paths(graph, V(graph), weights = E(graph)$time)
   cost <- shortest.paths(graph, V(graph), weights = E(graph)$cost)
@@ -56,14 +50,6 @@ create.city <- function(coordinate, adjacency, speed = 50, cost = 1.5) {
     )
   )
 }
-
-#' Plot your city
-#' 
-#' @param x A city
-#' @return A plot of a graph and a voronoi diagram
-#' @import igraph
-#' @importFrom tripack tri.mesh voronoi.mosaic voronoi.area add.constraint
-#' @export
 
 plotcity <- function(x, Tij = NULL) {
   graph <- x$graph
@@ -151,7 +137,7 @@ utilityOptim <- function(p, w, c, t, alpha, beta, gamma, theta, tau, G, H, D) {
   tcu <- theta*t
   pref <- outer(H, D, "+")
   u <- yu + ltu + luu + tcu + pref
-  list(u = u, ws = W, ld = L, yu = yu, ltu = ltu, luu = luu, tcu = tcu)
+  list(u = u, ws = W, ld = L, yu = yu, ltu = ltu, luu = luu, tcu = tcu, H = H, D = D)
 }
 
 maxOfUtilityMatrix <- function(x) {
@@ -164,6 +150,8 @@ maxOfUtilityMatrix <- function(x) {
   ltu <- x$ltu[index[1], index[2]]
   luu <- x$luu[index[1], index[2]]
   tcu <- x$tcu[index[1], index[2]]
+  Hu <- x$H[index[1]]
+  Du <- x$D[index[2]]
   #} else {
   #  index <- c(1,1)
   #  ws <- x$ws[index[1], index[2]]
@@ -177,11 +165,12 @@ maxOfUtilityMatrix <- function(x) {
        tcu = tcu,
        ws = ws, 
        ld = ld, 
+       Hu = Hu,
+       Du = Du,
        choice = index)
 }
 
-maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau,
-                       G, H, D) {
+maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau, G, H, D) {
   n <- nrow(w)
   umax <- vector(mode = "numeric", n)
   ws <- vector(mode = "numeric", n)
@@ -190,6 +179,8 @@ maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau,
   ltu <- vector(mode = "numeric", n)
   luu <- vector(mode = "numeric", n)
   tcu <- vector(mode = "numeric", n)
+  Hu <- vector(mode = "numeric", n)
+  Du <- vector(mode = "numeric", n)
   choice <- matrix(NA, n, 2)
   for (k in 1:n) {
     uo <- utilityOptim(p, w[k, ], c, t, alpha, beta, gamma, theta, tau, 
@@ -202,6 +193,8 @@ maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau,
     tcu[k] <- maxuo$tcu
     ws[k] <- maxuo$ws
     ld[k] <- maxuo$ld
+    Hu[k] <- maxuo$Hu
+    Du[k] <- maxuo$Du
     choice[k, ] <- maxuo$choice
   } 
   list(umax = umax, 
@@ -210,7 +203,9 @@ maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau,
        luu = luu,
        tcu = tcu,
        ws = ws, 
-       ld = ld, 
+       ld = ld,
+       Hu = Hu,
+       Du = Du,
        choice = choice)
 }
 
@@ -262,6 +257,8 @@ simulationSummary = function(x, empty = FALSE) {
   ltu = x$ltu
   luu = x$luu
   tcu = x$tcu
+  Hu = x$Hu
+  Du = x$Du
   income <- x$income
   choice <- x$choice
   ld <- x$ld
@@ -286,12 +283,6 @@ simulationSummary = function(x, empty = FALSE) {
   #inc.dist.node.avg.r <- apply(income*choice, 1, sum)/homecount
   #inc.dist.node.avg.w <- apply(income*choice, 2, sum)/workcount
   
-  #du <- deltaNaFill(y, u, n)
-  #du.y <- deltaNaFill(y, yu, n)
-  #du.lt <- deltaNaFill(y, ltu, n)
-  #du.lu <- deltaNaFill(y, luu, n)
-  #du.tc <- deltaNaFill(y, tcu, n)
-  
   population <- data.frame(
     i = choice[ , 1],
     j = choice[ , 2],
@@ -300,9 +291,11 @@ simulationSummary = function(x, empty = FALSE) {
     u.lt = ltu,
     u.lu = luu,
     u.tc = tcu,
-    income = inc,
-    working.hours = ws,
-    area.demand = ld
+    u.H = Hu,
+    u.D = Du,
+    inc = inc,
+    h = ws,
+    lu = ld
   )
   
   city <- data.frame(
@@ -326,28 +319,61 @@ simulationSummary = function(x, empty = FALSE) {
 
 widerEconomicBenefits <- function(x, y) {
   if(length(x$u) == length(y$u)) {
-    du <- y$u - x$u
-    du.y <- y$yu - x$yu
-    du.lt <- y$ltu - x$ltu
-    du.lu <- y$luu - x$luu
-    du.tc <- y$tcu - x$tcu
+    n <- length(x$u)
+    x.inc <- matrix(NA, n, 1)
+    for (i in 1:n) {
+      x.inc[i] <-  x$income[i, x$choice[i, 2]]   
+    }
+    y.inc <- matrix(NA, n, 1)
+    for (i in 1:n) {
+      y.inc[i] <-  y$income[i, y$choice[i, 2]]   
+    }
+    
+    x.u.sum <- sum(x$u)
+    x.lou.sum <- sum(x$price*x$supply)
+    x.tax.sum <- (1-x$tau)*sum(x.inc*x$ws)
+    x.tot <- sum(x.u.sum, x.lou.sum, x.tax.sum)
+    
+    diff.u.sum <- sum(y$u)-x.u.sum
+    diff.lou.sum <- sum(y$price*y$supply)-x.lou.sum
+    diff.tax.sum <- (1-y$tau)*sum(y.inc*y$ws)-x.tax.sum
+    diff <- sum(diff.u.sum, diff.lou.sum, diff.tax.sum)
+    
+    dsu <- sum(y$u)-sum(x$u)
+    dsp <- sum(y$price*y$supply)-sum(x$price*x$supply)
+    dst <- {1-y$tau}*{sum(y$income*y$ws)-sum(x$income*x$ws)}
+    
+    du <- y$u-x$u
+    du.y <- y$yu-x$yu
+    du.lt <- y$ltu-x$ltu
+    du.lu <- y$luu-x$luu
+    du.tc <- y$tcu-x$tcu
+    du.H <- y$Hu-x$Hu
+    du.D <- y$Du-x$Du
     
     WEB <- data.frame(
+      Measure = I(c("Worker utility", "Land-owner revenue", "Taxes", "Sum")),
+      "A" = c(x.u.sum, x.lou.sum, x.tax.sum, x.tot),
+      "B minus A" = c(diff.u.sum, diff.lou.sum, diff.tax.sum, diff)
+    )
+    
+    WEBP <- data.frame(
       u = x$u,
       u.y = x$yu,
       u.lt = x$ltu,
       u.lu = x$luu,
       u.tc = x$tcu,
+      u.H = x$Hu,
+      u.D = x$Du,
       du = du,
       du.y = du.y,
       du.lt = du.lt,
       du.lu = du.lu,
-      du.tc = du.tc
-      #income = inc,
-      #working.hours = ws,
-      #area.demand = ld
+      du.tc = du.tc,
+      du.H = du.H,
+      du.D = du.D
     )
-    return(WEB)
+    return(list(WEB = WEB, WEBP = WEBP))
   } else {
     return()
   }
