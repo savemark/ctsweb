@@ -110,7 +110,7 @@ shinyServer(
         tau <- parameterInputA()$tau
         val <- dfsane(
           rep(1000, v), fn = F, method = 2, 
-          control = list(M = 30, NM = FALSE, maxit = 30), 
+          control = list(M = 30, NM = FALSE, maxit = input$a_maxit), 
           quiet = FALSE, supply = supply, w = w, c = c, t = t, 
           alpha = alpha, beta = beta, gamma = gamma, theta = theta, tau = tau,
           G = 0, H = h_preference, D = w_preference
@@ -134,6 +134,7 @@ shinyServer(
             luu = object$luu,
             tcu = object$tcu,
             income = w, 
+            vot = object$vot,
             Hu = object$Hu,
             Du = object$Du,
             choice = object$choice, 
@@ -166,7 +167,7 @@ shinyServer(
         
         val <- dfsane(
           rep(1000, v), fn = F, method = 2, 
-          control = list(M = 30, NM = FALSE, maxit = 30), 
+          control = list(M = 30, NM = FALSE, maxit = input$b_maxit), 
           quiet = FALSE, supply = supply, w = w, c = c, t = t, 
           alpha = alpha, beta = beta, gamma = gamma, theta = theta, tau = tau,
           G = 0, H = h_preference, D = w_preference
@@ -189,7 +190,8 @@ shinyServer(
             ltu = object$ltu,
             luu = object$luu,
             tcu = object$tcu,
-            income = w, 
+            income = w,
+            vot = object$vot,
             Hu = object$Hu,
             Du = object$Du,
             choice = object$choice, 
@@ -262,5 +264,15 @@ shinyServer(
       widerEconomicBenefits(simulationInputA(), simulationInputB())$WEBP
     })
     
+    output$CS <- renderTable({
+      if (input[["a_recalc"]] == 0 || input[["b_recalc"]] == 0) 
+        return()
+      
+      isolate({
+        consumer.surplus(simulationInputA(), simulationInputB(), cityInputA(), cityInputB())
+      })
+    })
+    
   }
 )
+
