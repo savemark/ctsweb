@@ -1,13 +1,10 @@
-library(tripack)
-library(fields)
-library(igraph)
 library(BB)
 library(plyr)
 source("helpers.R")
 
 xy <- matrix(scan("xy.txt"), 33, 2, byrow = TRUE)
 v <- nrow(xy) # Number of nodes
-adj <- matrix(scan("adj.txt"), 33, 33, byrow = TRUE)
+adjacency <- matrix(scan("adj.txt"), 33, 33, byrow = TRUE)
 
 shinyServer(
   function(input, output, session) {
@@ -137,11 +134,14 @@ shinyServer(
             luu = object$luu,
             tcu = object$tcu,
             income = w, 
+            Hu = object$Hu,
+            Du = object$Du,
             choice = object$choice, 
             ws = object$ws, 
             ld = object$ld,
             demand = demand,
             supply = supply,
+            tau = tau,
             Tij = Tij
           )
         )
@@ -190,11 +190,14 @@ shinyServer(
             luu = object$luu,
             tcu = object$tcu,
             income = w, 
+            Hu = object$Hu,
+            Du = object$Du,
             choice = object$choice, 
             ws = object$ws, 
             ld = object$ld,
             demand = demand,
             supply = supply,
+            tau = tau,
             Tij = Tij
           )
         )
@@ -249,9 +252,15 @@ shinyServer(
       if (input[["a_recalc"]] == 0 || input[["b_recalc"]] == 0) 
         return()
       
-      widerEconomicBenefits(simulationInputA(), simulationInputB())
+      widerEconomicBenefits(simulationInputA(), simulationInputB())$WEB
+    })
+    
+    output$WEBP <- renderTable({
+      if (input[["a_recalc"]] == 0 || input[["b_recalc"]] == 0) 
+        return()
+      
+      widerEconomicBenefits(simulationInputA(), simulationInputB())$WEBP
     })
     
   }
 )
-
