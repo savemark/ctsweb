@@ -10,8 +10,8 @@ renderInputs <- function(prefix) {
       ),
       column(6,
              h5("Travel controls"),
-             sliderInput(paste0(prefix, "_", "speed"), label = "Velocity \\(\\frac{[km]}{[h]}\\)", min = 0, max = 100, value = 50, step = 1),
-             sliderInput(paste0(prefix, "_", "travel_cost"), label = "Travel cost per km", min = 0, max = 10, value = 1.5, step = 0.1),
+             sliderInput(paste0(prefix, "_", "speed"), label = "Velocity \\(\\frac{[\\text{km}]}{[\\text{h}]}\\)", min = 0, max = 100, value = 50, step = 1),
+             sliderInput(paste0(prefix, "_", "travel_cost"), label = "Travel cost \\(\\frac{[\\text{currency}]}{[\\text{km}]}\\)", min = 0, max = 10, value = 1.5, step = 0.1),
              sliderInput(paste0(prefix, "_", "theta"), label = "\\(\\theta\\)", min = 0, max = 10, value = 0.33, step = 0.01),
              helpText("\\(\\theta\\) is the parameter for travel comfort, or utility gained from time spent travelling, in the utility function.")
       )
@@ -33,6 +33,7 @@ renderInputs <- function(prefix) {
 shinyUI(
   fluidPage(
     tags$style(type="text/css",
+               #"th, td {padding: 5px; font-size: 10px;}",
                "label {font-size: 10px;}",
                ".recalculating {opacity: 1.0;}"
     ),
@@ -167,7 +168,12 @@ shinyUI(
              wellPanel(
                tabsetPanel(
                  tabPanel("WEB",
-                          tableOutput("WEB")
+                          column(3,
+                                 tableOutput("WEB")
+                          ),
+                          column(9,
+                                 tableOutput("WEBP")
+                          )
                  ),
                  tabPanel("Scenario A: Population",
                           tableOutput("simulationPopulationA")
@@ -180,6 +186,52 @@ shinyUI(
                  ),
                  tabPanel("Scenario B: City",
                           tableOutput("simulationCityB")
+                 ),
+                 tabPanel("List of variables",
+                          withTags({
+                            table(border = 1,
+                                  tr(
+                                    td(strong("Abbrevation")),
+                                    td("i"),
+                                    td("j"),
+                                    td("inc"),
+                                    td("h"),
+                                    td("tax"),
+                                    td("lu")
+                                  ),
+                                  tr(
+                                    td(strong("Variable")),
+                                    td("Node of origin"),
+                                    td("Node of destination"),
+                                    td("Income per hour"),
+                                    td("Work hours per day"),
+                                    td("Amount of taxes paid per day"),
+                                    td("Land use")
+                                  ),
+                                  tr(
+                                    td(strong("Abbrevation")),
+                                    td("u"),
+                                    td("u.y"),
+                                    td("u.lt"),
+                                    td("u.lu"),
+                                    td("u.tc"),
+                                    td("u.H"),
+                                    td("u.D"),
+                                    td("du, du.y, du.lt, du.lt, du.tc, du.H, du.D")
+                                  ),
+                                  tr(
+                                    td(strong("Variable")),
+                                    td("utility"),
+                                    td("utility (money)"),
+                                    td("utility (leisure time)"),
+                                    td("utility (land use)"),
+                                    td("utility (travel comfort)"),
+                                    td("utility (residential area)"),
+                                    td("utility (workplace)"),
+                                    td("delta utility (variable)")
+                                  )
+                            )
+                          })                          
                  )
                )
              )
