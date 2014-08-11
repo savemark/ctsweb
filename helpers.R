@@ -93,7 +93,7 @@ plotcity <- function(x, Tij = NULL) {
        #ymax = ymax), 
        vertex.label = paste(V(graph), "\n", round(V(graph)$area.supply, 2)),
        vertex.label.font = 1,
-       vertex.label.cex = 0.75,
+       vertex.label.cex = 0.7,
        vertex.label.degree = pi/2,
        vertex.label.color = "black",
        vertex.color = vertex.color,
@@ -106,7 +106,8 @@ plotcity <- function(x, Tij = NULL) {
        edge.arrow.size = 0.3,
        #rescale = FALSE,
        edge.label = paste(round(E(x$graph)$cost, 2), "\n", round(E(x$graph)$time, 2)),
-       edge.label.cex = 0.5
+       edge.label.cex = 0.7,
+       edge.label.color = "darkblue"
   )
   plot(vm, add = TRUE, col = "grey", pch = NA, xlim = c(1.05*minx, 1.05*maxx), ylim = c(1.05*miny, 1.05*maxy))
 }
@@ -132,12 +133,13 @@ utilityOptim <- function(p, w, c, t, alpha, beta, gamma, theta, tau, G, H, D) {
   W <- {{alpha+gamma}*{24-t}*tau*w+beta*{c-G}}/{{alpha+beta+gamma}*w*tau}
   L <- {gamma*{{24-t}*w*tau-c+G}}/{p*{alpha+beta+gamma}}
   yu <- alpha*log(ifelse(tau*w*W-p*L-c+G>0, tau*w*W-p*L-c+G, NA))
+  vot <- ifelse(tau*w*W-p*L-c+G>0, tau*w-theta*alpha/{tau*w*W-p*L-c+G}, NA)
   ltu <- beta*log(ifelse(24-W-t>0, 24-W-t, NA))
   luu <- gamma*log(ifelse(L>0, L, NA))
   tcu <- theta*t
   pref <- outer(H, D, "+")
   u <- yu + ltu + luu + tcu + pref
-  list(u = u, ws = W, ld = L, yu = yu, ltu = ltu, luu = luu, tcu = tcu, H = H, D = D)
+  list(u = u, ws = W, ld = L, yu = yu, ltu = ltu, luu = luu, tcu = tcu, H = H, D = D, vot = vot)
 }
 
 maxOfUtilityMatrix <- function(x) {
@@ -152,6 +154,7 @@ maxOfUtilityMatrix <- function(x) {
   tcu <- x$tcu[index[1], index[2]]
   Hu <- x$H[index[1]]
   Du <- x$D[index[2]]
+  vot <- x$vot[index[1], index[2]]
   #} else {
   #  index <- c(1,1)
   #  ws <- x$ws[index[1], index[2]]
@@ -167,6 +170,7 @@ maxOfUtilityMatrix <- function(x) {
        ld = ld, 
        Hu = Hu,
        Du = Du,
+       vot = vot,
        choice = index)
 }
 
@@ -181,6 +185,7 @@ maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau, G, H, D) {
   tcu <- vector(mode = "numeric", n)
   Hu <- vector(mode = "numeric", n)
   Du <- vector(mode = "numeric", n)
+  vot <- vector(mode = "numeric", n)
   choice <- matrix(NA, n, 2)
   for (k in 1:n) {
     uo <- utilityOptim(p, w[k, ], c, t, alpha, beta, gamma, theta, tau, 
@@ -195,6 +200,7 @@ maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau, G, H, D) {
     ld[k] <- maxuo$ld
     Hu[k] <- maxuo$Hu
     Du[k] <- maxuo$Du
+    vot[k] <- maxuo$vot
     choice[k, ] <- maxuo$choice
   } 
   list(umax = umax, 
@@ -206,6 +212,7 @@ maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau, G, H, D) {
        ld = ld,
        Hu = Hu,
        Du = Du,
+       vot = vot,
        choice = choice)
 }
 
@@ -260,6 +267,7 @@ simulationSummary = function(x, empty = FALSE) {
   Hu = x$Hu
   Du = x$Du
   income <- x$income
+  vot <- x$vot
   choice <- x$choice
   ld <- x$ld
   ws <- x$ws
@@ -294,6 +302,7 @@ simulationSummary = function(x, empty = FALSE) {
     u.H = Hu,
     u.D = Du,
     inc = inc,
+    vot = vot,
     h = ws,
     lu = ld
   )
@@ -377,4 +386,22 @@ widerEconomicBenefits <- function(x, y) {
   } else {
     return()
   }
+}
+
+consumer.surplus <- function(x, y, cityx, cityy) {
+  Tij0 <- x$Tij
+  Cij0 <- cityx$cost
+  tij0 <- cityx$time
+  
+  Tij1 <- y$Tij
+  Cij1 <- cityy$cost
+  tij1 <- cityy$time
+  
+  vot <- mean(x$vot)
+  cs <- round(sum(0.5*(Tij0+Tij1)*(Cij0-Cij1+vot*(tij0-tij1))), 2)
+  
+  return(
+    data.frame(
+      "Consumer Surplus (rule-of-a-half)" = cs)
+  )
 }
