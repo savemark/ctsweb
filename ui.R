@@ -24,7 +24,8 @@ renderInputs <- function(prefix) {
              helpText("The running time of the simulation increases with increasing \\(N\\) and \\(|v|\\).")
       ),
       column(6,
-             p(actionButton(paste0(prefix, "_", "recalc"), "Run/Re-run simulation", icon("random")))
+             p(actionButton(paste0(prefix, "_", "recalc"), "Run/Re-run simulation", icon("random"))),
+             sliderInput(paste0(prefix, "_", "maxit"), label = "Maximum number of iterations", min = 10, max = 1500, value = 50, step = 10)
       )
     )
   )
@@ -169,7 +170,8 @@ shinyUI(
                tabsetPanel(
                  tabPanel("WEB",
                           column(3,
-                                 tableOutput("WEB")
+                                 tableOutput("WEB"),
+                                 tableOutput("CS")
                           ),
                           column(9,
                                  tableOutput("WEBP")
