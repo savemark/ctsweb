@@ -1,5 +1,9 @@
+library(shiny)
 library(BB)
 library(plyr)
+library(igraph)
+library(tripack)
+library(fields)
 source("helpers.R")
 
 xy <- matrix(scan("xy.txt"), 33, 2, byrow = TRUE)
