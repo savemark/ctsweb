@@ -132,14 +132,16 @@ utilityOptim <- function(p, w, c, t, alpha, beta, gamma, theta, tau, G, H, D) {
   w <- matrix(w, v, v, byrow = TRUE)
   W <- {{alpha+gamma}*{24-t}*tau*w+beta*{c-G}}/{{alpha+beta+gamma}*w*tau}
   L <- {gamma*{{24-t}*w*tau-c+G}}/{p*{alpha+beta+gamma}}
-  yu <- alpha*log(ifelse(tau*w*W-p*L-c+G>0, tau*w*W-p*L-c+G, NA))
-  vot <- ifelse(tau*w*W-p*L-c+G>0, tau*w-theta*alpha/{tau*w*W-p*L-c+G}, NA)
+  budget <- tau*w*W-p*L-c+G
+  yu <- alpha*log(ifelse(budget>0, budget, NA))
+  vot <- ifelse(budget>0, tau*w-theta*alpha/budget, NA)
   ltu <- beta*log(ifelse(24-W-t>0, 24-W-t, NA))
   luu <- gamma*log(ifelse(L>0, L, NA))
   tcu <- theta*t
   pref <- outer(H, D, "+")
   u <- yu + ltu + luu + tcu + pref
-  list(u = u, ws = W, ld = L, yu = yu, ltu = ltu, luu = luu, tcu = tcu, H = H, D = D, vot = vot)
+  u.monetary <- budget*u/alpha
+  list(u = u, ws = W, ld = L, yu = yu, ltu = ltu, luu = luu, tcu = tcu, H = H, D = D, vot = vot, u.monetary = u.monetary)
 }
 
 maxOfUtilityMatrix <- function(x) {
@@ -155,6 +157,7 @@ maxOfUtilityMatrix <- function(x) {
   Hu <- x$H[index[1]]
   Du <- x$D[index[2]]
   vot <- x$vot[index[1], index[2]]
+  u.monetary <- x$u.monetary[index[1], index[2]]
   #} else {
   #  index <- c(1,1)
   #  ws <- x$ws[index[1], index[2]]
@@ -171,6 +174,7 @@ maxOfUtilityMatrix <- function(x) {
        Hu = Hu,
        Du = Du,
        vot = vot,
+       u.monetary = u.monetary,
        choice = index)
 }
 
@@ -186,6 +190,7 @@ maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau, G, H, D) {
   Hu <- vector(mode = "numeric", n)
   Du <- vector(mode = "numeric", n)
   vot <- vector(mode = "numeric", n)
+  u.monetary <- vector(mode = "numeric", n)
   choice <- matrix(NA, n, 2)
   for (k in 1:n) {
     uo <- utilityOptim(p, w[k, ], c, t, alpha, beta, gamma, theta, tau, 
@@ -201,6 +206,7 @@ maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau, G, H, D) {
     Hu[k] <- maxuo$Hu
     Du[k] <- maxuo$Du
     vot[k] <- maxuo$vot
+    u.monetary[k] <- maxuo$u.monetary
     choice[k, ] <- maxuo$choice
   } 
   list(umax = umax, 
@@ -213,6 +219,7 @@ maxUtility <- function(p, w, c, t, alpha, beta, gamma, theta, tau, G, H, D) {
        Hu = Hu,
        Du = Du,
        vot = vot,
+       u.monetary = u.monetary,
        choice = choice)
 }
 
@@ -274,6 +281,7 @@ simulationSummary = function(x, empty = FALSE) {
   price <- x$price
   demand <- x$demand
   supply <- x$supply
+  u.monetary <- x$u.monetary
   
   inc <- matrix(NA, n, 1)
   for (i in 1:n) {
@@ -302,6 +310,7 @@ simulationSummary = function(x, empty = FALSE) {
     u.H = Hu,
     u.D = Du,
     inc = inc,
+    u.monetary = u.monetary,
     vot = vot,
     h = ws,
     lu = ld
@@ -338,17 +347,17 @@ widerEconomicBenefits <- function(x, y) {
       y.inc[i] <-  y$income[i, y$choice[i, 2]]   
     }
     
-    x.u.sum <- sum(x$u)
+    x.u.monetary.sum <- sum(x$u.monetary)
     x.lou.sum <- sum(x$price*x$supply)
     x.tax.sum <- (1-x$tau)*sum(x.inc*x$ws)
-    x.tot <- sum(x.u.sum, x.lou.sum, x.tax.sum)
+    x.tot <- sum(x.u.monetary.sum, x.lou.sum, x.tax.sum)
     
-    diff.u.sum <- sum(y$u)-x.u.sum
+    diff.u.monetary.sum <- sum(y$u.monetary)-x.u.monetary.sum
     diff.lou.sum <- sum(y$price*y$supply)-x.lou.sum
     diff.tax.sum <- (1-y$tau)*sum(y.inc*y$ws)-x.tax.sum
-    diff <- sum(diff.u.sum, diff.lou.sum, diff.tax.sum)
+    diff <- sum(diff.u.monetary.sum, diff.lou.sum, diff.tax.sum)
     
-    dsu <- sum(y$u)-sum(x$u)
+    dsum <- sum(y$u.monetary)-sum(x$u.monetary)
     dsp <- sum(y$price*y$supply)-sum(x$price*x$supply)
     dst <- {1-y$tau}*{sum(y$income*y$ws)-sum(x$income*x$ws)}
     
@@ -362,8 +371,8 @@ widerEconomicBenefits <- function(x, y) {
     
     WEB <- data.frame(
       Measure = I(c("Worker utility", "Land-owner revenue", "Taxes", "Sum")),
-      "A" = c(x.u.sum, x.lou.sum, x.tax.sum, x.tot),
-      "B minus A" = c(diff.u.sum, diff.lou.sum, diff.tax.sum, diff)
+      "A" = c(x.u.monetary.sum, x.lou.sum, x.tax.sum, x.tot),
+      "B minus A" = c(diff.u.monetary.sum, diff.lou.sum, diff.tax.sum, diff)
     )
     
     WEBP <- data.frame(
