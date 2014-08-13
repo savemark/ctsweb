@@ -1,3 +1,4 @@
+install.packages(c("BB", "plyr", "igraph", "tripack", "fields"))
 library(shiny)
 library(BB)
 library(plyr)
