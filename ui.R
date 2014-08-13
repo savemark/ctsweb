@@ -25,7 +25,7 @@ renderInputs <- function(prefix) {
       ),
       column(6,
              p(actionButton(paste0(prefix, "_", "recalc"), "Run/Re-run simulation", icon("random"))),
-             sliderInput(paste0(prefix, "_", "maxit"), label = "Maximum number of iterations", min = 10, max = 1500, value = 50, step = 10)
+             sliderInput(paste0(prefix, "_", "maxit"), label = "Maximum number of iterations", min = 10, max = 1500, value = 1500, step = 10)
       )
     )
   )
@@ -98,7 +98,7 @@ shinyUI(
                fluidRow(
                  column(12,
                         h5("Number of workers"),
-                        sliderInput("n", label = "Number of workers \\(N\\)", min = 100, max = 500, value = 300, step = 1),
+                        sliderInput("n", label = "Number of workers \\(N\\)", min = 300, max = 1000, value = 500, step = 1),
                         helpText("Increasing the number of workers will increase the time of each simulation.")
                  )
                ),
