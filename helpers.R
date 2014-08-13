@@ -1,7 +1,3 @@
-library(igraph)
-library(tripack)
-library(fields)
-
 create.city <- function(coordinate, adjacency, speed, cost) {
   v <- nrow(coordinate)
   graph <- graph.empty()
