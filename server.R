@@ -110,11 +110,17 @@ shinyServer(
         tau <- parameterInputA()$tau
         val <- dfsane(
           rep(1000, v), fn = F, method = 2, 
-          control = list(M = 30, NM = FALSE, maxit = input$a_maxit), 
+          control = list(M = 75, NM = TRUE, maxit = input$a_maxit), 
           quiet = FALSE, supply = supply, w = w, c = c, t = t, 
           alpha = alpha, beta = beta, gamma = gamma, theta = theta, tau = tau,
           G = 0, H = h_preference, D = w_preference
         )
+        #val <- nleqslv(
+        #  rep(1000, v), F, jac = NULL, supply = supply, w = w, c = c, t = t,
+         # alpha = alpha, beta = beta, gamma = gamma, theta = theta, tau = tau,
+         # G = 0, H = h_preference, D = w_preference, method = "Newton", global = "dbldog"
+        #)
+        
         object <- maxUtility(
           val$par, w, c, t, alpha, beta, gamma, theta, tau,
           G = 0, H = h_preference, D = w_preference
@@ -134,6 +140,7 @@ shinyServer(
             luu = object$luu,
             tcu = object$tcu,
             income = w, 
+            u.monetary = object$u.monetary,
             vot = object$vot,
             Hu = object$Hu,
             Du = object$Du,
@@ -167,7 +174,7 @@ shinyServer(
         
         val <- dfsane(
           rep(1000, v), fn = F, method = 2, 
-          control = list(M = 30, NM = FALSE, maxit = input$b_maxit), 
+          control = list(M = 75, NM = FALSE, maxit = input$b_maxit), 
           quiet = FALSE, supply = supply, w = w, c = c, t = t, 
           alpha = alpha, beta = beta, gamma = gamma, theta = theta, tau = tau,
           G = 0, H = h_preference, D = w_preference
@@ -191,6 +198,7 @@ shinyServer(
             luu = object$luu,
             tcu = object$tcu,
             income = w,
+            u.monetary = object$u.monetary,
             vot = object$vot,
             Hu = object$Hu,
             Du = object$Du,
