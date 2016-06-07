@@ -19,11 +19,11 @@ roth2 <- function(x, y, comfort) {
   # comfort vector, two values
   votMeanA <- apply(getProbability(x$population)*getMarginalEffect(x$population)[ , , , 3]/getMarginalEffect(x$population)[ , , , 1], c(1,2), 
                     sum, na.rm = TRUE)/apply(getProbability(x$population), c(1,2), sum, na.rm = TRUE)
-  marginalUtilityOfMoneyMeanA <- apply(getProbability(x$population)*(1/getMarginalEffect(y$population)[ , , , 1]), c(1,2), 
+  marginalUtilityOfMoneyMeanA <- apply(getProbability(x$population)*(1/((-1)*getMarginalEffect(y$population)[ , , , 1])), c(1,2), 
                                        sum, na.rm = TRUE)/apply(getProbability(x$population), c(1,2), sum, na.rm = TRUE)
   roth <- sum(0.5*(odDemand(getProbability(x$population))+odDemand(getProbability(y$population)))*(getCost(x$city)-getCost(y$city)
                                                                                                    +votMeanA*(getTime(x$city)-getTime(y$city))
-                                                                                                   +marginalUtilityOfMoneyMeanA*getTime(x$city)*(comfort[1]-comfort[2])))
+                                                                                                   +marginalUtilityOfMoneyMeanA*(-getTime(x$city))*(comfort[2]-comfort[1])))
   return(roth)
 }
 
@@ -47,11 +47,12 @@ roah3 <- function(x, y) {
   margin3 <- getMarginalEffect(x$population)[ , , , 3]
   margin4 <- getMarginalEffect(x$population)[ , , , 4]
   margin5 <- getMarginalEffect(x$population)[ , , , 5]
-  roah1 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*(cost.x-cost.y))
-  roah2 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((margin3/margin1)*(time.x-time.y)))
-  roah3 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((time.x/margin1)*(beta5.x-beta5.y)))
-  roah4 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((margin4/margin1)*(price.y-price.x)))
-  roah5 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((margin5/margin1)*(wage.y-wage.x)))
+  # (-1) in the following is due to marginal utility of income is minus marginal utility of travel cost
+  roah1 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*(-1)*(cost.y-cost.x)) 
+  roah2 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*(-1)*((margin3/margin1)*(time.y-time.x)))
+  roah3 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*(-1)*((-time.x/margin1)*(beta5.y-beta5.x)))
+  roah4 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*(-1)*((margin4/margin1)*(price.y-price.x)))
+  roah5 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*(-1)*((margin5/margin1)*(wage.y-wage.x)))
   roah <- c(roah1, roah2, roah3, roah4, roah5)
   return(roah)
 }
@@ -147,7 +148,7 @@ ev2 <- function(x, y, sigma) {
   maxu.ya <- array(rep(maxu.y, each = getNodeCount(y$city)^2), dim = c(getNodeCount(y$city), getNodeCount(y$city), getSize(y$population)))
   logsum.x <- maxu.x+sigma*log(apply(exp((getUtility(x$population)-maxu.xa)/sigma), 3, sum))
   logsum.y <- maxu.y+sigma*log(apply(exp((getUtility(y$population)-maxu.ya)/sigma), 3, sum))
-  ev <- (logsum.y-logsum.x)/(apply(getProbability(x$population)*getMarginalEffect(x$population)[ , , , 1], 3, sum))
+  ev <- (logsum.y-logsum.x)/(apply(getProbability(x$population)*(-1)*getMarginalEffect(x$population)[ , , , 1], 3, sum))
   ev <- sum(ev)
   return(ev)
 }
