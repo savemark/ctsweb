@@ -4,7 +4,7 @@ column(4,
          fluidRow(
            column(6, 
                   sliderInput("n", label = "Population size \\(N\\)", min = 2, max = 2000, value = 250, step = 1),
-                  sliderInput("delta", label = "Scale parameter \\(\\delta>0\\) for the error terms", min = 0.0005, max = 1, value = 0.01, step = 0.001)
+                  sliderInput("delta", label = "Scale parameter \\(\\delta>0\\) for the error terms", min = 0.01, max = 0.1, value = 0.01, step = 0.001)
            ),
            column(6,
                   sliderInput("tau", label = "Taxation rate \\(\\tau\\)", min = 0, max = 0.5, value = 0.30, step = 0.01),
@@ -14,8 +14,7 @@ column(4,
          fluidRow(
            column(12, 
                   tags$h5("Population size"),
-                  p("\\(N\\) is the size of the population, or the number of different choice sets. 
-                    All choice sets are equal in size and depend on the number of origins/destinations in the city."),
+                  p("\\(N\\) is the size of the population, or the number of different choice probability matrices."),
                   tags$h5("Taxation rate"),
                   p("\\(\\tau \\in [0, 1) \\) is the tax rate parameter. When it is set to 0, the taxation rate is 0%."),
                   tags$h5("Scale parameter for the random utility error terms"),
@@ -46,7 +45,7 @@ column(4,
                   sliderInput("nodes", label = "Nodes (only if Random)", value = 30, min = 10, max = 60, step = 1)
            ),
            column(4,
-                  sliderInput("scale", label = "Scale", value = 7.5, min = 1, max = 25, step = 0.1)
+                  sliderInput("scale", label = "Scale", value = 7.5, min = 1, max = 100, step = 0.1)
            )
          )
        ),
@@ -82,7 +81,7 @@ column(4,
            ),
            column(6, 
                   sliderInput("days", label = "Work days per year", min = 200, max = 365, value = 228, step = 1),
-                  sliderInput("hours", label = "Hours per day", min = 1, max = 16, value = 8, step = 0.01)
+                  sliderInput("hours", label = "Hours per day", min = 4, max = 12, value = 8, step = 0.01)
            )
          ),
          fluidRow(

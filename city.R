@@ -1,15 +1,5 @@
-#library(igraph)
-#library(tripack)
-#library(fields)
 setClass("igraph")
 setClass("voronoi")
-
-validCityObject <- function(object) {
-  if (nrow(object@coordinate) != nrow(object@adjacency))
-    paste("The number of rows of x (", nrow(object@coordinate), ") and y (", nrow(object@adjacency), ") should have been equal", sep = "")
-  else
-    return(TRUE)
-}
 
 city <- setClass("City",
                  slots = c(coordinate = "matrix",
@@ -22,8 +12,15 @@ city <- setClass("City",
                            distance = "matrix",
                            time = "matrix",
                            cost = "matrix"),
-                 validity = validCityObject
+                 validity = function(object) {
+                   if (nrow(object@coordinate) != nrow(object@adjacency))
+                     paste("The number of rows of x (", nrow(object@coordinate), ") and y (", nrow(object@adjacency), ") should have been equal", sep = "")
+                   else
+                     return(TRUE)
+                 }
 )
+
+# Getters -----------------------------------------------------------------
 
 setGeneric("getNodeCount", function(object) {standardGeneric("getNodeCount")})
 setMethod("getNodeCount",
@@ -89,6 +86,8 @@ setMethod("getCentrality",
           }
 )
 
+# Setters -----------------------------------------------------------------
+
 setGeneric("setSpeed<-", function(object, value) {standardGeneric("setSpeed<-")})
 setReplaceMethod("setSpeed",
                  signature = "City",
@@ -141,38 +140,6 @@ setMethod("internalSetCostFactor",
           }
 )
 
-setMethod("show",
-          signature = "City",
-          function(object) {
-            cat("An object of class", class(object), "\n")
-            cat(" ", "\n",
-                "ROAD NETWORK", "\n",
-                "Number of road network nodes: ", length(V(object@network)), "\n",
-                "Number of road network links: ", length(E(object@network)), "\n",
-                "Longest link", "\n",
-                "Id(s):", which(E(object@network)$length == max(E(object@network)$length), arr.ind = TRUE), "\n",
-                "Length: ", max(E(object@network)$length), "\n",
-                "Shortest link", "\n",
-                "Id(s):", which(E(object@network)$length == min(E(object@network)$length), arr.ind = TRUE), "\n",
-                "Length: ", min(E(object@network)$length), "\n")
-            cat(" ", "\n",
-                "ZONES", "\n",
-                "Number of zones: ", length(V(object@network)), "\n",
-                "Largest cell area: ", max(V(object@network)$area), "\n",
-                "Id(s):", which(V(object@network)$area == max(V(object@network)$area), arr.ind = TRUE), "\n",
-                "Smallest cell area: ", min(V(object@network)$area), "\n",
-                "Id(s):", which(V(object@network)$area == min(V(object@network)$area), arr.ind = TRUE), "\n")
-            cat(" ", "\n",
-                "SPEED and COSTFACTOR", "\n",
-                "Speed: ", object@speed, "\n",
-                "Costfactor: ", object@costfactor, "\n",
-                "Longest distance (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$length)), "\n",
-                "Largest travel time (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$time)), "\n",
-                "Largest travel cost (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$cost)))
-            invisible(NULL)
-          }
-)
-
 setMethod("initialize",
           signature = "City",
           function(.Object, x, y, speed = 1, costfactor = 1) {
@@ -205,6 +172,38 @@ setMethod("initialize",
             V(.Object@network)$centrality <- betweenness(.Object@network, V(.Object@network), weights = E(.Object@network)$length)
             validObject(.Object)
             return(.Object)            
+          }
+)
+
+setMethod("show",
+          signature = "City",
+          function(object) {
+            cat("An object of class", class(object), "\n")
+            cat(" ", "\n",
+                "ROAD NETWORK", "\n",
+                "Number of road network nodes: ", length(V(object@network)), "\n",
+                "Number of road network links: ", length(E(object@network)), "\n",
+                "Longest link", "\n",
+                "Id(s):", which(E(object@network)$length == max(E(object@network)$length), arr.ind = TRUE), "\n",
+                "Length: ", max(E(object@network)$length), "\n",
+                "Shortest link", "\n",
+                "Id(s):", which(E(object@network)$length == min(E(object@network)$length), arr.ind = TRUE), "\n",
+                "Length: ", min(E(object@network)$length), "\n")
+            cat(" ", "\n",
+                "ZONES", "\n",
+                "Number of zones: ", length(V(object@network)), "\n",
+                "Largest cell area: ", max(V(object@network)$area), "\n",
+                "Id(s):", which(V(object@network)$area == max(V(object@network)$area), arr.ind = TRUE), "\n",
+                "Smallest cell area: ", min(V(object@network)$area), "\n",
+                "Id(s):", which(V(object@network)$area == min(V(object@network)$area), arr.ind = TRUE), "\n")
+            cat(" ", "\n",
+                "SPEED and COSTFACTOR", "\n",
+                "Speed: ", object@speed, "\n",
+                "Costfactor: ", object@costfactor, "\n",
+                "Longest distance (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$length)), "\n",
+                "Largest travel time (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$time)), "\n",
+                "Largest travel cost (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$cost)))
+            invisible(NULL)
           }
 )
 
@@ -315,6 +314,15 @@ setMethod("plot",
 city.delunay <- function(x, ...) {
   A <- matrix(0, nrow(x), nrow(x))
   tri <- tri.mesh(x[, 1], x[, 2])
+  for(i in 1:nrow(x)) {A[i, tripack::neighbours(tri)[[i]]] <- 1}
+  return(new(Class = "City", x = x, y = A, ...))
+}
+
+city.manhattan <- function(n, ...) {
+  x <- seq(from = 0, to = 1, by = 1/n)
+  x <- as.matrix(expand.grid(x, x))
+  A <- matrix(0, nrow(x), nrow(x))
+  tri <- tri.mesh(x[,1], x[,2])
   for(i in 1:nrow(x)) {A[i, tripack::neighbours(tri)[[i]]] <- 1}
   return(new(Class = "City", x = x, y = A, ...))
 }

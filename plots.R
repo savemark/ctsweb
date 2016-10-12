@@ -233,3 +233,147 @@ output$incomedensity <- renderPlot({ # Income
            lty = c(1,1), col = c("red", "blue"))
   })
 })
+
+output$residency3dA <- renderPlot({
+  if (is.null(simulationInput())) {
+    return()
+  } else {      
+    isolate({
+      dens <- apply(getProbability(simulationInput()$populationA), 1, sum, na.rm = TRUE)/getArea(cityInputA())
+      surf <- interp(getCoordinate(cityInputA())[ , 1], getCoordinate(cityInputA())[ , 2], dens)
+      persp3D(x = surf$x, 
+              y = surf$y,
+              z = surf$z,
+              col = gg2.col(),
+              contour = list(side = "z"),
+              lightning = "ambient",
+              shade = 0.5,
+              alpha = 1,
+              ticktype = "detailed",
+              cex.axis = 0.5,
+              zlim = range(surf$z, na.rm = TRUE),
+              zlab = "Residence density",
+              sub = "Base scenario")
+    })
+  }
+}, width = "auto")
+
+output$residency3dB <- renderPlot({
+  if (is.null(simulationInput())) {
+    return()
+  } else {      
+    isolate({
+      dens <- apply(getProbability(simulationInput()$populationB), 1, sum, na.rm = TRUE)/getArea(cityInputB())
+      surf <- interp(getCoordinate(cityInputB())[ , 1], getCoordinate(cityInputB())[ , 2], dens)
+      persp3D(x = surf$x, 
+              y = surf$y,
+              z = surf$z,
+              col = gg2.col(),
+              contour = list(side = "z"),
+              lightning = "ambient",
+              shade = 0.5,
+              alpha = 1,
+              ticktype = "detailed",
+              cex.axis = 0.5,
+              zlim = range(surf$z, na.rm = TRUE),
+              zlab = "Residence density",
+              sub = "Do-something scenario")
+    })
+  }
+}, width = "auto")
+
+output$work3dA <- renderPlot({
+  if (is.null(simulationInput())) {
+    return()
+  } else {      
+    isolate({
+      dens <- apply(getProbability(simulationInput()$populationA), 2, sum, na.rm = TRUE)/getArea(cityInputA())
+      surf <- interp(getCoordinate(cityInputA())[ , 1], getCoordinate(cityInputA())[ , 2], dens)
+      persp3D(x = surf$x, 
+              y = surf$y,
+              z = surf$z,
+              col = gg2.col(),
+              contour = list(side = "z"),
+              lightning = "ambient",
+              shade = 0.5,
+              alpha = 1,
+              ticktype = "detailed",
+              cex.axis = 0.5,
+              zlim = range(surf$z, na.rm = TRUE),
+              zlab = "Worker density",
+              sub = "Base scenario")
+    })
+  }
+}, width = "auto")
+
+output$work3dB <- renderPlot({
+  if (is.null(simulationInput())) {
+    return()
+  } else {      
+    isolate({
+      dens <- apply(getProbability(simulationInput()$populationB), 2, sum, na.rm = TRUE)/getArea(cityInputB())
+      surf <- interp(getCoordinate(cityInputB())[ , 1], getCoordinate(cityInputB())[ , 2], dens)
+      persp3D(x = surf$x, 
+              y = surf$y,
+              z = surf$z,
+              col = gg2.col(),
+              contour = list(side = "z"),
+              lightning = "ambient",
+              shade = 0.5,
+              alpha = 1,
+              ticktype = "detailed",
+              cex.axis = 0.5,
+              zlim = range(surf$z, na.rm = TRUE),
+              zlab = "Worker density",
+              sub = "Do-something scenario")
+    })
+  }
+}, width = "auto")
+
+output$price3dA <- renderPlot({
+  if (is.null(simulationInput())) {
+    return()
+  } else {      
+    isolate({
+      dens <- simulationInput()$solutionA$par[1:getNodeCount(cityInputA())]
+      surf <- interp(getCoordinate(cityInputA())[ , 1], getCoordinate(cityInputA())[ , 2], dens)
+      persp3D(x = surf$x, 
+              y = surf$y,
+              z = surf$z,
+              col = gg2.col(),
+              contour = list(side = "z"),
+              lightning = "ambient",
+              shade = 0.5,
+              alpha = 1,
+              ticktype = "detailed",
+              cex.axis = 0.5,
+              zlim = range(surf$z, na.rm = TRUE),
+              zlab = "Land-price",
+              sub = "Base scenario")
+    })
+  }
+}, width = "auto")
+
+output$price3dB <- renderPlot({
+  if (is.null(simulationInput())) {
+    return()
+  } else {      
+    isolate({
+      dens <- simulationInput()$solutionB$par[1:getNodeCount(cityInputB())]
+      surf <- interp(getCoordinate(cityInputB())[ , 1], getCoordinate(cityInputB())[ , 2], dens)
+      persp3D(x = surf$x, 
+              y = surf$y,
+              z = surf$z,
+              col = gg2.col(),
+              contour = list(side = "z"),
+              lightning = "ambient",
+              shade = 0.5,
+              alpha = 1,
+              ticktype = "detailed",
+              cex.axis = 0.5,
+              zlim = range(surf$z, na.rm = TRUE),
+              zlab = "Land-price",
+              sub = "Do-something scenario")
+    })
+  }
+}, width = "auto")

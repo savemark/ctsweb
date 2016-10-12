@@ -2,13 +2,15 @@ population <- setClass("Population",
                        slots = c(n = "numeric",
                                  nodes = "numeric",
                                  wagerate = "matrix",
+                                 underlying.wagerate = "matrix",
                                  op = "matrix",
                                  dp = "matrix",
                                  utility = "array",
                                  argmax = "array",
                                  lambda = "array",
                                  probability = "array",
-                                 od = "matrix"),
+                                 od = "matrix",
+                                 sectorid = "numeric"),
                        validity = function(object) {
                          if (!object@n%%1 == 0)
                            return("N needs to be an integer")
@@ -20,6 +22,8 @@ population <- setClass("Population",
                        }
 )
 
+# Getters -----------------------------------------------------------------
+
 setGeneric("getSize", function(object) {standardGeneric("getSize")})
 setMethod("getSize",
           signature = "Population",
@@ -28,11 +32,27 @@ setMethod("getSize",
           }
 )
 
+setGeneric("getNodes", function(object) {standardGeneric("getNodes")})
+setMethod("getNodes",
+          signature = "Population",
+          definition = function(object) {
+            return(object@nodes)
+          }
+)
+
 setGeneric("getWageRate", function(object) {standardGeneric("getWageRate")})
 setMethod("getWageRate",
           signature = "Population",
           definition = function(object) {
             return(object@wagerate)
+          }
+)
+
+setGeneric("getUnderlyingWageRate", function(object) {standardGeneric("getUnderlyingWageRate")})
+setMethod("getUnderlyingWageRate",
+          signature = "Population",
+          definition = function(object) {
+            return(object@underlying.wagerate)
           }
 )
 
@@ -108,6 +128,34 @@ setMethod("getOriginDestinationMatrix",
           }
 )
 
+setGeneric("getSectorID", function(object) {standardGeneric("getSectorID")})
+setMethod("getSectorID",
+          signature = "Population",
+          definition = function(object) {
+            return(object@sectorid)
+          }
+)
+
+# Setters -----------------------------------------------------------------
+
+setGeneric("setSize<-", function(object, value) {standardGeneric("setSize<-")})
+setReplaceMethod("setSize", 
+                 signature = "Population",
+                 definition = function(object, value) {
+                   object@n <- value
+                   return(object)
+                 }
+)
+
+setGeneric("setNodes<-", function(object, value) {standardGeneric("setNodes<-")})
+setReplaceMethod("setNodes", 
+                 signature = "Population",
+                 definition = function(object, value) {
+                   object@nodes <- value
+                   return(object)
+                 }
+)
+
 setGeneric("setOriginDestinationMatrix<-", function(object, value) {standardGeneric("setOriginDestinationMatrix<-")})
 setReplaceMethod("setOriginDestinationMatrix",
                  signature = "Population",
@@ -122,6 +170,15 @@ setReplaceMethod("setWageRate",
                  signature = "Population",
                  definition = function(object, value) {
                    object@wagerate <- value
+                   return(object)
+                 }
+)
+
+setGeneric("setUnderlyingWageRate<-", function(object, value) {standardGeneric("setUnderlyingWageRate<-")})
+setReplaceMethod("setUnderlyingWageRate", 
+                 signature = "Population",
+                 definition = function(object, value) {
+                   object@underlying.wagerate <- value
                    return(object)
                  }
 )
@@ -181,22 +238,26 @@ setReplaceMethod("setMarginalEffect",
                  }
 )
 
+setGeneric("setSectorID<-", function(object, value) {standardGeneric("setSectorID<-")})
+setReplaceMethod("setSectorID", 
+                 signature = "Population",
+                 definition = function(object, value) {
+                   object@sectorid <- value
+                   return(object)
+                 }
+)
+
 setMethod("initialize",
           signature = "Population",
           function(.Object, x, y, median = 336000, spread = 1.12, days = 228, hours = 8, omean = 0, osd = 0.25, dmean = 0, dsd = 0.25, ...) {
-            .Object@n <- x
-            .Object@nodes <- y            
-            mu <- log(median)
-            sigma <- sqrt(2*(log(spread)))
-            wagerate <- matrix(exp(mu+sigma*rnorm(y*x))/{hours*days}, x, y)
-            setWageRate(.Object) <- wagerate
-            op <- matrix(rnorm(x*y, mean = omean, sd = osd), x, y)
-            dp <- matrix(rnorm(x*y, mean = dmean, sd = dsd), x, y)
-            setOriginPreference(.Object) <- op
-            setDestinationPreference(.Object) <- dp            
-            .Object@od <- matrix(NA, y, y) # od matrix
-            .Object@utility <- array(NA, dim = c(y, y, x, 6))
-            .Object@probability <- array(NA, dim = c(y, y, x))
+            setSize(.Object) <- x
+            setNodes(.Object) <- y            
+            setWageRate(.Object) <- matrix(exp(log(median)+sqrt(2*(log(spread)))*rnorm(y*x))/{hours*days}, x, y)
+            setUnderlyingWageRate(.Object) <- getWageRate(.Object)
+            setOriginPreference(.Object) <- matrix(rnorm(x*y, mean = omean, sd = osd), x, y)
+            setDestinationPreference(.Object) <- matrix(rnorm(x*y, mean = dmean, sd = dsd), x, y)          
+            setOriginDestinationMatrix(.Object) <- matrix(NA, y, y)
+            setProbability(.Object) <- array(NA, dim = c(y, y, x))
             validObject(.Object)
             return(.Object)            
           }
@@ -205,19 +266,21 @@ setMethod("initialize",
 setMethod("show",
           signature = "Population",
           function(object) {
-            cat("An object of class Population", "\n", 
+            cat("\n", "An object of class", class(object), "\n")
+            cat(" ", "\n",
+                "Sector id: ", object@sectorid, "\n",
                 "Number of classes/individuals: ", object@n, "\n",
-                "Number of sources of income: ", object@nodes, "\n", "\n",
-                "Quantiles", "\n", sep = "")
+                "Number of sources of income: ", object@nodes, "\n")
+            cat(" ", "\n",
+                "WAGE RATES AND PREFERENCES", "\n",
+                "Count of NA(s): ", length(object@wagerate[is.na(object@wagerate)]), "\n",
+                "Quantiles", "\n")
             tab <- cbind(as.matrix(quantile(object@wagerate, na.rm = TRUE)), 
                          as.matrix(quantile(object@op, na.rm = TRUE)), 
                          as.matrix(quantile(object@dp, na.rm = TRUE)))
             colnames(tab) <- c("Wage Rates", "Origin Pref.", "Destination Pref.")
             print(tab)
-            cat("\n",
-                "WAGE RATES", "\n",
-                "Count of NA(s): ", length(object@wagerate[is.na(object@wagerate)]), "\n",
-                "PROBABILITIES", "\n",
-                "Count of NA(s): ", length(object@probability[is.na(object@probability)]), sep = "")
+            cat("PROBABILITIES", "\n",
+                "Count of NA(s): ", length(object@probability[is.na(object@probability)]), "\n")
           }
 )

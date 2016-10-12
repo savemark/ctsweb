@@ -34,19 +34,35 @@ column(8,
                            )
                   ),     
                   tabPanel("Plots",
-                           column(6,
-                                  plotOutput("wageratedensity"),
-                                  plotOutput("x2density"),
-                                  plotOutput("x4density"),
-                                  plotOutput("vktdensity"),
-                                  plotOutput("opdensity")
-                           ),
-                           column(6,
-                                  plotOutput("x1density"),
-                                  plotOutput("x3density"),
-                                  plotOutput("x5density"),
-                                  plotOutput("incomedensity"),
-                                  plotOutput("dpdensity")
+                           tabsetPanel(
+                             tabPanel("Demand plots",
+                                      column(6,
+                                             plotOutput("wageratedensity"),
+                                             plotOutput("x2density"),
+                                             plotOutput("x4density"),
+                                             plotOutput("vktdensity"),
+                                             plotOutput("opdensity")
+                                      ),
+                                      column(6,
+                                             plotOutput("x1density"),
+                                             plotOutput("x3density"),
+                                             plotOutput("x5density"),
+                                             plotOutput("incomedensity"),
+                                             plotOutput("dpdensity")
+                                      )
+                             ),
+                             tabPanel("3D Plots",
+                                      column(6,
+                                             plotOutput("residency3dA", width = "100%", height = "600px"),
+                                             plotOutput("price3dA", width = "100%", height = "600px"),
+                                             plotOutput("work3dA", width = "100%", height = "600px")
+                                      ),
+                                      column(6,
+                                             plotOutput("residency3dB", width = "100%", height = "600px"),
+                                             plotOutput("price3dB", width = "100%", height = "600px"),
+                                             plotOutput("work3dB", width = "100%", height = "600px")
+                                      )
+                             )
                            )
                   ),
                   tabPanel("Base scenario",

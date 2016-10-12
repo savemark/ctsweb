@@ -34,11 +34,12 @@ utilityOptimClosure <- function(beta2, beta3, beta4, beta5, tau) {
       return(argmax)
     }
     marginalEffects <- function(x) {
-      lambda1 <- beta2/x[ , , , 2]
+      # note that marginal utility of income is minus marginal utility of travel cost
+      lambda1 <- beta2/x[ , , , 2] # marginal utility of income
       lambda2 <- beta3/x[ , , , 3]
-      lambda3 <- beta5 + lambda2
-      lambda4 <- -beta4/p
-      lambda5 <- {(1-beta3)*(24-t)*tau*w-beta3*y+beta3*c}/{w*((24-t)*tau*w+y-c)}
+      lambda3 <- -(beta5 + lambda2) # marginal utility of travel time
+      lambda4 <- -beta4/p # marginal utility of land price
+      lambda5 <- {(1-beta3)*(24-t)*tau*w-beta3*y+beta3*c}/{w*((24-t)*tau*w+y-c)} # marginal utility of wage rate
       lambda <- array(c(lambda1, lambda2, lambda3, lambda4, lambda5), dim = c(V, V, N, 5))
       return(lambda)
     }

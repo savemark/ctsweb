@@ -71,7 +71,7 @@ output$summary <- renderPrint({
     rownames(tab_roah2) <- c("(6) Rule of a Half approximation of (1)")
     print(tab_roah2)
     
-    cat("\n", "Transport benefits with WEB", "\n")
+    cat("\n", "Transport benefits with WEI", "\n")
     roah3 <- roah3(list(population = simulationInput()$populationA, city = simulationInput()$cityA, price = simulationInput()$solutionA$par, comfort = input$a_beta5), 
                    list(population = simulationInput()$populationB, city = simulationInput()$cityB, price = simulationInput()$solutionB$par, comfort = input$b_beta5))
     tab_roah3 <- round(cbind(Estimate = c(roah3, sum(roah3))))#, "(1)/(7) (%)" = 100*ev/roah3, "Relative error (%)" = 100*(roah3-ev)/ev), 2)

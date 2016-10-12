@@ -23,30 +23,41 @@ simulation <- function(guess, city, population, utility, delta, spillover.eps = 
            maximum = maximumProbability(x, ...)
     )
   }
-  economyEquilibrium.closure <- function(city, population, utility, delta, epsilon) {
-    v <- getNodeCount(city)
-    supply <- getArea(city)
+  
+  knowledgeSpillover <- function(city, population, epsilon, type = "FromAll") {
     n <- getSize(population)
-    wagerate0 <- as.vector(getWageRate(population)) # row vector
-    function(pw) {
-      p <- pw[1:v]
-      w <- pw[-(1:v)]
-      setWageRate(population) <- matrix(w, n, v)
-      u <- utility(p, city, population)
-      setProbability(population) <- probability(u$umax, "logit", delta)
-      demand <- apply(getProbability(population)*u$argmax[ , , , 4], 1, sum, na.rm = TRUE)
-      excess <- demand-supply # excess demand
-      nj <- apply(getProbability(population), 2, sum, na.rm = TRUE)
+    knowledgeSpilloverFromAllButOneself <- function(city, population, epsilon) {
+      nj <- sapply(1:n, function(m) {apply(getProbability(population)[, , -m], 2, sum)}) # matrix
+      nj <- as.vector(t(nj))
+      supply <- rep(getArea(city), n) # Need to repeat the supply
       factor <- (1+nj/supply)^epsilon
-      factor <- rep(factor, each = n)
-      #factor <- matrix(factor, n, v, byrow = TRUE)
-      wageratediff <- factor*wagerate0-w # wage rate fixed point
-      return(c(excess, wageratediff))
+      return(factor)
     }
+    knowledgeSpilloverFromAll <- function(city, population, epsilon) {
+      nj <- apply(getProbability(population), 2, sum, na.rm = TRUE)
+      factor <- (1+nj/getArea(city))^epsilon
+      factor <- rep(factor, each = n)
+      return(factor)
+    }
+    switch(type,
+           FromAllButOneself = knowledgeSpilloverFromAllButOneself(city, population, epsilon),
+           FromAll = knowledgeSpilloverFromAll(city, population, epsilon)
+    )
   }
-  economyEquilibrium <- economyEquilibrium.closure(city, population, utility, delta, spillover.eps)
-  pw0 <- c(guess, as.vector(getWageRate(population))) # land prices and wage rates guess
-  sol <- dfsane(par = pw0, fn = economyEquilibrium, control = list(trace = FALSE, NM = FALSE), quiet = FALSE)
+  
+  economyEquilibrium <- function(pw, city, population, utility, wagerate0, delta, epsilon) {
+    setWageRate(population) <- matrix(pw[-(1:getNodeCount(city))], getSize(population), getNodeCount(city))
+    u <- utility(pw[1:getNodeCount(city)], city, population)
+    setProbability(population) <- probability(u$umax, "logit", delta)
+    y <- c(apply(getProbability(population)*u$argmax[ , , , 4], 1, sum, na.rm = TRUE)-getArea(city), # excess demand
+           knowledgeSpillover(city, population, epsilon)*wagerate0-pw[-(1:getNodeCount(city))]) # wage rate fixed point
+    return(y)
+  }
+  
+  wagerate0 <- as.vector(getWageRate(population)) # row vector
+  pw0 <- c(guess, wagerate0) # land prices and wage rates guess
+  sol <- dfsane(fn = economyEquilibrium, par = pw0, control = list(trace = FALSE, NM = FALSE), quiet = FALSE, 
+                city = city, population = population, utility = utility, wagerate0 = wagerate0, delta = delta, epsilon = spillover.eps)
   price <- sol$par[1:getNodeCount(city)] # land price p*
   wagerate <- sol$par[-(1:getNodeCount(city))] # wage rate w*
   sol$par <- price 

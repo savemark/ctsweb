@@ -9,6 +9,7 @@ library(mgcv)
 library(arrayhelpers)
 library(plotrix)
 library(akima)
+library(plot3D)
 
 source("data.R")
 source("city.R")
