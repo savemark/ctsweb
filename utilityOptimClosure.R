@@ -6,7 +6,7 @@ utilityOptimClosure <- function(beta2, beta3, beta4, beta5, tau) {
   stopifnot(all(c(beta2, beta3, beta4, beta5) > 0))
   stopifnot(tau <= 1 && tau > 0)
   
-  function(p, city, population, y = NA) {
+  function(p, city, population, y = 100) {
     # p zone price vector
     # First, calculate the arg max
     # We do this by turning vectors (matrices) into arrays and 
@@ -21,9 +21,9 @@ utilityOptimClosure <- function(beta2, beta3, beta4, beta5, tau) {
     op <- array(apply(t(getOriginPreference(population)), 2, # origin-preference
                       function(x) {matrix(rep(x, length.out = V*V), V, V)}), dim = c(V, V, N))
     dp <- array(rep(t(getDestinationPreference(population)), each = V), dim = c(V, V, N)) # destination-preference 
-    if (is.na(y)) {
-      y <- 100 #max(c-tau*w*(24-t)) # neccessary exogenous income
-    }
+    #if (is.na(y)) {
+    #  y <- 100 #max(c-tau*w*(24-t)) # neccessary exogenous income
+    #}
     argmaxUtility <- function(p, w, c, t) {      
       x1 <- 24-t-{beta3/{tau*w}}*{tau*w*(24-t)+y-c}     # Optimal working hours
       x2 <- beta2*{tau*w*{24-t}+y-c}                    # Optimal consumption
@@ -36,7 +36,7 @@ utilityOptimClosure <- function(beta2, beta3, beta4, beta5, tau) {
     marginalEffects <- function(x) {
       # note that marginal utility of income is minus marginal utility of travel cost
       lambda1 <- beta2/x[ , , , 2] # marginal utility of income
-      lambda2 <- beta3/x[ , , , 3]
+      lambda2 <- beta3/x[ , , , 3] # marginal utility of time
       lambda3 <- -(beta5 + lambda2) # marginal utility of travel time
       lambda4 <- -beta4/p # marginal utility of land price
       lambda5 <- {(1-beta3)*(24-t)*tau*w-beta3*y+beta3*c}/{w*((24-t)*tau*w+y-c)} # marginal utility of wage rate

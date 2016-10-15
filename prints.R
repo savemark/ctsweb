@@ -18,7 +18,7 @@ output$summary <- renderPrint({
     cat("Do-something scenario: Land prices and wage rates...", simulationInput()$solutionB$message, "\n")
     nodes <- getNodeCount(simulationInput()$cityA)
     N <- getSize(simulationInput()$populationA)
-    
+    cat("--------------------------------------------------------------------------------")
     cat("\n", "Elasticities of VKT w.r.t. ...", "\n")      
     log.vkt.ratio <- log(sum(odDemand(getProbability(simulationInput()$populationB))*getDistance(simulationInput()$cityB))/sum(odDemand(getProbability(simulationInput()$populationA))*getDistance(simulationInput()$cityA)))
     log.time.ratio <- log({1/input$b_speed}/{1/input$a_speed})
@@ -34,7 +34,7 @@ output$summary <- renderPrint({
                                    , 2), "Reference Value" = 0.04)
     rownames(tab4) <- c("Accessibility")
     print(tab4)       
-    
+    cat("--------------------------------------------------------------------------------")
     cat("\n", "Equivalent variation approximation", "\n")
     ev <- ev2(list(city = simulationInput()$cityA, population = simulationInput()$populationA), 
               list(city = simulationInput()$cityB, population = simulationInput()$populationB),
@@ -46,38 +46,30 @@ output$summary <- renderPrint({
     tax.b <- tax(simulationInput()$cityB, simulationInput()$populationB, input$tau)
     tax.diff <- tax.b-tax.a        
     tab3 <- round(cbind(Estimate = ev), 2)
-    rownames(tab3) <- c("(1) Difference")        
+    rownames(tab3) <- c("Difference")        
     print(tab3)
-    cat("\n", "Tax", "\n")
-    tab4 <- round(cbind(Estimate = tax.diff, "Percentage of (1)" = 100*tax.diff/ev), 2)
-    rownames(tab4) <- c("Difference")
-    print(tab4)
-    cat("\n", "Land-owner revenues", "\n")
-    tab.lor <- round(cbind(Estimate = lor.diff), 2)
-    rownames(tab.lor) <- c("Difference")
-    print(tab.lor)
-    
+    cat("--------------------------------------------------------------------------------")
+    cat("\n", "Differences in the economy from a top-down point of view", "\n")
     wage.sum <- wageSum(simulationInput()$populationA, simulationInput()$populationB, input$tau)
-    cat("\n", "Wagesum", "\n")
-    tab.ws <- cbind(Estimate = wage.sum)
-    #rownames(tab.ws) <- c("Difference")
-    print(tab.ws)
-    
+    tab4 <- round(cbind(Estimate = c(tax.diff, lor.diff, wage.sum$Base, wage.sum$Scale)), 2)
+    rownames(tab4) <- c("Tax revenues", "Land-owner revenues", "Wages: Matching and Work hours", "Wages: Spillovers")
+    print(tab4)
+    cat("--------------------------------------------------------------------------------")
     cat("\n", "Transport benefits", "\n", "- Only travel costs, travel times, travel comfort", "\n")
     roth2 <- roth2(list(city = simulationInput()$cityA, population = simulationInput()$populationA), 
                    list(city = simulationInput()$cityB, population = simulationInput()$populationB),
                    comfort = c(input$a_beta5, input$b_beta5)) 
-    tab_roah2 <- round(cbind(Estimate = roth2, "(1)/(6) (%)" = 100*ev/roth2, "Relative error (%)" = 100*(roth2-ev)/ev), 2)
-    rownames(tab_roah2) <- c("(6) Rule of a Half approximation of (1)")
+    tab_roah2 <- round(cbind(Estimate = roth2), 2)
+    rownames(tab_roah2) <- c("Rule of a Half approximation")
     print(tab_roah2)
     
     cat("\n", "Transport benefits with WEI", "\n")
     roah3 <- roah3(list(population = simulationInput()$populationA, city = simulationInput()$cityA, price = simulationInput()$solutionA$par, comfort = input$a_beta5), 
                    list(population = simulationInput()$populationB, city = simulationInput()$cityB, price = simulationInput()$solutionB$par, comfort = input$b_beta5))
     tab_roah3 <- round(cbind(Estimate = c(roah3, sum(roah3))))#, "(1)/(7) (%)" = 100*ev/roah3, "Relative error (%)" = 100*(roah3-ev)/ev), 2)
-    rownames(tab_roah3) <- c("1. Travel costs", "2. Travel times", "3. Travel comfort", "4. Land-prices", "5. Wage rate offers", "Sum")
+    rownames(tab_roah3) <- c("1. Travel costs", "2. Travel times", "3. Travel comfort", "4. Land prices", "5. Wage rate offers", "Sum")
     print(tab_roah3)
-    
+    cat("--------------------------------------------------------------------------------")
     cat("\n", "Averages", "\n")
     tab5 <- round(avarages(list(city = simulationInput()$cityA, population = simulationInput()$populationA), 
                            list(city = simulationInput()$cityB, population = simulationInput()$populationB)), 2)

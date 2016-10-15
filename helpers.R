@@ -46,6 +46,46 @@ roah3 <- function(x, y) {
   return(roah)
 }
 
+roah4 <- function(x, y) {
+  # With comfort, land prices, wage rates
+  # x, y list(population, city, price, comfort)
+  # sapply(1:n, function(m) {apply(getProbability(population)[, , -m], 2, sum)})
+  N <- getSize(x$population)
+  V <- getNodeCount(x$city)
+  price.x <- matrix(x$price, V, V)
+  price.y <- matrix(y$price, V, V)
+  wage.x <- array(rep(t(getWageRate(x$population)), each = V), dim = c(V, V, N))
+  wage.y <- array(rep(t(getWageRate(y$population)), each = V), dim = c(V, V, N))
+  beta5.x <- x$comfort
+  beta5.y <- y$comfort
+  margin1 <- getMarginalEffect(x$population)[ , , , 1] # marginal utility of income
+  margin2 <- getMarginalEffect(x$population)[ , , , 2]
+  margin3 <- getMarginalEffect(x$population)[ , , , 3]
+  margin4 <- getMarginalEffect(x$population)[ , , , 4]
+  margin5 <- getMarginalEffect(x$population)[ , , , 5]
+  income <- sapply(1:N, function(m) {sum(getProbability(x$population)[ , , m]*wage.x[ , , m]*getArgMax(x$population)[ , , m, 1])})
+  roah1 <- sapply(1:N, function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*(-1)*(getCost(y$city)-getCost(x$city)))}) 
+  roah2 <- sapply(1:N, function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((margin3[ , , m]/margin1[ , , m])*(getTime(y$city)-getTime(x$city))))})
+  roah3 <- sapply(1:N, function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((-getTime(x$city)/margin1[ , , m])*(beta5.y-beta5.x)))})
+  roah4 <- sapply(1:N, function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((margin4[ , , m]/margin1[ , , m])*(price.y-price.x)))})
+  roah5 <- sapply(1:N, function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((margin5[ , , m]/margin1[ , , m])*(wage.y[ , , m]-wage.x[ , , m])))})
+  roah <- cbind(income, "travel cost" = roah1, "travel time" = roah2, "travel comfort" = roah3, "land price" = roah4, "wage rate" = roah5)
+  return(roah)
+}
+
+equityPlot <- function(x) { # x comes from roah4
+  rs <- rowSums(x[ , 2:6])
+  tab <- cbind(x, total.utility = rs)
+  tab <- as.data.frame(tab)
+  range <- cut(tab[ , 1], breaks = quantile(tab[ , 1], probs = seq(0, 1, 0.2)), include.lowest = T, dig.lab = 5)
+  tab <- cbind(tab, range)
+  tab.ag <- aggregate(tab[ , 2:7], by = list(income = tab$range), FUN = sum)
+  tab.gather <- gather(tab.ag, value = "utility", key = "variable", 2:6)
+  g <- ggplot(tab.gather, aes(x = income, y = utility)) + geom_bar(aes(weight = utility, fill = variable), stat = "identity", position = "dodge")
+  g <- g + ggtitle("Utility in monetary unit per income class and per variable") + theme_bw()
+  return(g)
+}
+
 tax <- function(city, population, tau) {
   nodes <- getNodeCount(city)
   N <- getSize(population)

@@ -1,26 +1,36 @@
 column(8,
        fluidRow(
          column(6,
-                wellPanel(
-                  h4("Base scenario"),
-                  renderInputs("a")
+                tabsetPanel(
+                  tabPanel("Base scenario",
+                           wellPanel(
+                             renderInputs("a")
+                           )
+                  )
                 )
          ),
          column(6,
-                wellPanel(
-                  h4("Do-something scenario"),
-                  renderInputs("b")
+                tabsetPanel(
+                  tabPanel("Do-something scenario",
+                           wellPanel(
+                             renderInputs("b")
+                           )
+                  )
                 )
          )
        ),
        fluidRow(
          column(2,
                 actionButton("run", "Run/Re-run simulation", icon("random"))
-         ),
-         column(10,
-                p("Note that running the simulation can take several minutes. 
+         )
+       ),
+       fluidRow(
+         column(12,
+                br(),
+                p("Note that running the simulation usually takes 1-2 minutes. 
                   Run time depends mostly on population size, the number of origins/destinations and if there is a spillover 
-                  effect in the economy.")
+                  effect in the economy. Also note that when the simulation has finished, some of the tables might take some time to load because of the 
+                  large number of entries.")
                 )
        ),
        tags$br(),
@@ -51,6 +61,11 @@ column(8,
                                              plotOutput("dpdensity")
                                       )
                              ),
+                             tabPanel("Equity plots",
+                                      column(12,
+                                             plotOutput("equity")
+                                             )
+                             ),
                              tabPanel("3D Plots",
                                       column(6,
                                              plotOutput("residency3dA", width = "100%", height = "600px"),
@@ -65,41 +80,26 @@ column(8,
                              )
                            )
                   ),
-                  tabPanel("Base scenario",
+                  tabPanel("Tables",
                            tabsetPanel(
-                             tabPanel("City",
-                                      dataTableOutput("simulationCityA")
-                             ),
-                             tabPanel("Population",
-                                      dataTableOutput("simulationPopulationA")
-                             ),
-                             tabPanel("Plots",
-                                      column(6,
-                                             "-" #webGLOutput("cityPrice")
-                                             #plotOutput("cityPlotA")
-                                      ),
-                                      column(6, 
-                                             "-" #webGLOutput("cityPopulationDensity")
+                             tabPanel("Base scenario",
+                                      tabsetPanel(
+                                        tabPanel("City",
+                                                 dataTableOutput("simulationCityA")
+                                        ),
+                                        tabPanel("Population",
+                                                 dataTableOutput("simulationPopulationA")
+                                        )
                                       )
-                             )
-                           )
-                  ),
-                  tabPanel("Do-something scenario",
-                           tabsetPanel(
-                             tabPanel("City",
-                                      dataTableOutput("simulationCityB")
                              ),
-                             tabPanel("Population",
-                                      dataTableOutput("simulationPopulationB")
-                             ),
-                             tabPanel("Plots",
-                                      column(6,
-                                             #plotOutput("cityPopulationPlotA"),
-                                             "-" #webGLOutput("cityPrice")
-                                             #plotOutput("cityPlotA")
-                                      ),
-                                      column(6, 
-                                             "-" #webGLOutput("cityPopulationDensity")
+                             tabPanel("Do-something scenario",
+                                      tabsetPanel(
+                                        tabPanel("City",
+                                                 dataTableOutput("simulationCityB")
+                                        ),
+                                        tabPanel("Population",
+                                                 dataTableOutput("simulationPopulationB")
+                                        )
                                       )
                              )
                            )

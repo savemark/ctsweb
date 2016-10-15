@@ -10,6 +10,8 @@ library(arrayhelpers)
 library(plotrix)
 library(akima)
 library(plot3D)
+library(tidyr)
+library(ggplot2)
 
 source("data.R")
 source("city.R")

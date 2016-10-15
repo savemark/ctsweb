@@ -36,7 +36,9 @@ output$populationPreferenceHistogram <- renderPlot({
   lines(density(getDestinationPreference(populationInput())), lty = "dotted")
 })
 
-# Densities
+
+# Density plots -----------------------------------------------------------
+
 output$x1density <- renderPlot({ # Work hours
   if (is.null(simulationInput())) {
     return()
@@ -233,6 +235,23 @@ output$incomedensity <- renderPlot({ # Income
            lty = c(1,1), col = c("red", "blue"))
   })
 })
+
+
+# Equity plots ------------------------------------------------------------
+
+output$equity <- renderPlot({
+  if (is.null(simulationInput())) {
+    return()
+  } else { 
+    isolate({
+      cs <- roah4(list(population = simulationInput()$populationA, city = simulationInput()$cityA, price = simulationInput()$solutionA$par, comfort = input$a_beta5), 
+                  list(population = simulationInput()$populationB, city = simulationInput()$cityB, price = simulationInput()$solutionB$par, comfort = input$b_beta5))
+      equityPlot(cs)
+    })
+  }
+})
+
+# 3D plots ----------------------------------------------------------------
 
 output$residency3dA <- renderPlot({
   if (is.null(simulationInput())) {

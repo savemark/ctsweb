@@ -56,7 +56,7 @@ simulation <- function(guess, city, population, utility, delta, spillover.eps = 
   
   wagerate0 <- as.vector(getWageRate(population)) # row vector
   pw0 <- c(guess, wagerate0) # land prices and wage rates guess
-  sol <- dfsane(fn = economyEquilibrium, par = pw0, control = list(trace = FALSE, NM = FALSE), quiet = FALSE, 
+  sol <- BBsolve(par = pw0, fn = economyEquilibrium, control = list(trace = FALSE, NM = TRUE), quiet = TRUE, 
                 city = city, population = population, utility = utility, wagerate0 = wagerate0, delta = delta, epsilon = spillover.eps)
   price <- sol$par[1:getNodeCount(city)] # land price p*
   wagerate <- sol$par[-(1:getNodeCount(city))] # wage rate w*

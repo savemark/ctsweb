@@ -61,7 +61,7 @@ simulationInput <- reactive({ # Simulation
     return(NULL)
   } else {      
     isolate({
-      simA <- simulation(guess = rep(1000, getNodeCount(cityInputA())), 
+      simA <- simulation(guess = rep(50, getNodeCount(cityInputA())), 
                          city = cityInputA(),
                          population = populationInput(),
                          utility = utilityFunctionInputA(),
