@@ -19,21 +19,28 @@ column(8,
                 )
          )
        ),
-       fluidRow(
-         column(2,
-                actionButton("run", "Run/Re-run simulation", icon("random"))
+       wellPanel(
+         fluidRow(
+           
+           column(2,
+                  numericInput("guess", "Land price guess", value = 50, min = 1, max = 100)
+           ),
+           column(10,
+                  p("Land price guess for the Base scenario. The solution will be used as a guess for the Do-something scenario.")
+           )
+         ),
+         fluidRow(
+           column(2,
+                  actionButton("run", "Run/Re-run", icon("refresh"), width = "90%")
+           ),
+           column(10,
+                  p("Note that running the simulation usually takes 1-2 minutes. 
+                    Run time depends mostly on population size, the number of origins/destinations and if there is a spillover 
+                    effect in the economy. Also note that when the simulation has finished, some of the tables might take some time to load because of the 
+                    large number of entries.")
+           )
          )
        ),
-       fluidRow(
-         column(12,
-                br(),
-                p("Note that running the simulation usually takes 1-2 minutes. 
-                  Run time depends mostly on population size, the number of origins/destinations and if there is a spillover 
-                  effect in the economy. Also note that when the simulation has finished, some of the tables might take some time to load because of the 
-                  large number of entries.")
-                )
-       ),
-       tags$br(),
        fluidRow(
          column(12, 
                 tabsetPanel(

@@ -1,5 +1,7 @@
 simulation <- function(guess, city, population, utility, delta, spillover.eps = 0) {
   # guess = land price guess vector
+  if (!all(guess > 0))
+    stop("The land price guess needs to be larger than 0.")
   probability <- function(x, type = "logit", ...) {
     # x indirect utility, 3-dimensional array
     maximumProbability <- function(x, margin = 3) {

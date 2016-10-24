@@ -127,7 +127,8 @@ avarages <- function(x, y) {
                "VKT" = c(VKT.a, VKT.b), 
                "Travel time" = c(travelTimeAvg.a, travelTimeAvg.b), 
                "Travel cost" = c(travelCostAvg.a, travelCostAvg.b),
-               "Value of Travel Time" = c(mean(votMeanA), mean(votMeanB)))
+               "Marginal value of Travel Time" = c(mean(votMeanA), mean(votMeanB))
+               )
   )
 }
 
@@ -135,10 +136,10 @@ logitTransportModel <- function(x, mu) {
   N <- getSize(x$population)
   nodes <- getNodeCount(x$city)
   votMean <- apply(getProbability(x$population)*getVoT(x$population), c(1,2), sum)/apply(getProbability(x$population), c(1,2), sum)
-  gc <- -getCost(x$city)+votMean*getTime(x$city)
+  gc <- -getCost(x$city)+votMean*getTime(x$city) # votMean is negative (as it should)
   Hi <- matrix(apply(getProbability(x$population), 1, sum), nodes, nodes)/N # Number of residents in zone i as matrix with identical rows
   Wk <- t(matrix(apply(getProbability(x$population), 2, sum), nodes, nodes))/N # Number of workers in zone k as matrix with identical cols
-  rowsum <- matrix(apply(Wk*exp(mu*gc), 1, sum), nodes, nodes)
+  rowsum <- matrix(apply(Wk*exp(mu*gc), 1, sum), nodes, nodes) # denominator 
   od <- (Hi*Wk*exp(mu*gc))/rowsum
   time.avg <- sum(od*getTime(x$city))
   return(time.avg)
@@ -150,20 +151,20 @@ logElasticityProductionAccessibility <- function(x, y, mu) {
   wagerate.x <- array(rep(t(getWageRate(x$population)), each = nodes), dim = c(nodes, nodes, N))
   wagerate.y <- array(rep(t(getWageRate(y$population)), each = nodes), dim = c(nodes, nodes, N))
   votMean.x <- apply(getProbability(x$population)*getVoT(x$population), c(1,2), sum)/apply(getProbability(x$population), c(1,2), sum)
-  #votMean.y <- apply(getProbability(y$population)*getVoT(y$population), c(1,2), sum)/apply(getProbability(y$population), c(1,2), sum)
-  Hi.x <- apply(getProbability(x$population), 1, sum) # Number of residents in zone i 
-  Hi.y <- apply(getProbability(y$population), 1, sum) # Number of residents in zone i 
-  Wk.x <- t(matrix(apply(getProbability(x$population), 2, sum), nodes, nodes)) # Number of workers in zone k as matrix with identical cols
-  Wk.y <- t(matrix(apply(getProbability(y$population), 2, sum), nodes, nodes)) # Number of workers in zone k as matrix with identical cols
+  votMean.y <- apply(getProbability(y$population)*getVoT(y$population), c(1,2), sum)/apply(getProbability(y$population), c(1,2), sum)
+  Hi.x <- matrix(apply(getProbability(x$population), 1, sum), nodes, nodes)/N # Number of residents in zone i as matrix with identical rows
+  Hi.y <- matrix(apply(getProbability(y$population), 1, sum), nodes, nodes)/N # Number of residents in zone i as matrix with identical rows
+  Wk.x <- t(matrix(apply(getProbability(x$population), 2, sum), nodes, nodes))/N # Number of workers in zone k as matrix with identical cols
+  Wk.y <- t(matrix(apply(getProbability(y$population), 2, sum), nodes, nodes))/N # Number of workers in zone k as matrix with identical cols
   gc.x <- -getCost(x$city)+votMean.x*getTime(x$city)
   gc.y <- -getCost(y$city)+votMean.x*getTime(y$city) # votMean.x (before the policy)
-  accessibility.x <- sum((1/mu)*Hi.x*log(apply(Wk.x*exp(mu*gc.x), 1, sum)))
-  accessibility.y <- sum((1/mu)*Hi.y*log(apply(Wk.y*exp(mu*gc.y), 1, sum)))
-  log.accessibility.ratio <- log(accessibility.y/accessibility.x)
+  rowsum.x <- matrix(log(apply(Wk.x*exp(mu*gc.x), 1, sum)), nodes, nodes)
+  rowsum.y <- matrix(log(apply(Wk.y*exp(mu*gc.y), 1, sum)), nodes, nodes)
+  accessibility.x <- sum((1/mu)*Hi.x*rowsum.x)
+  accessibility.y <- sum((1/mu)*Hi.y*rowsum.y)
   production.x <- sum(getArgMax(x$population)[ , , , 1]*wagerate.x*getProbability(x$population))
   production.y <- sum(getArgMax(y$population)[ , , , 1]*wagerate.y*getProbability(y$population))
-  log.production.ratio <- log(production.y/production.x)
-  return(log.production.ratio/log.accessibility.ratio)
+  return(((production.y-production.x)/production.x)/((accessibility.y-accessibility.x)/abs(accessibility.x))) # Note the absolute value of accessibility
 }
 
 ev2 <- function(x, y, sigma) {

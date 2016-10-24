@@ -30,7 +30,7 @@ output$summary <- renderPrint({
     
     cat("\n", "Elasticity of total output w.r.t. ...", "\n")
     tab4 <- cbind(Estimate = round(logElasticityProductionAccessibility(list(city = simulationInput()$cityA, population = simulationInput()$populationA), 
-                                                                          list(city = simulationInput()$cityB, population = simulationInput()$populationB), 0.01)
+                                                                          list(city = simulationInput()$cityB, population = simulationInput()$populationB), 0.004)
                                    , 2), "Reference Value" = 0.04)
     rownames(tab4) <- c("Accessibility")
     print(tab4)       
@@ -77,10 +77,22 @@ output$summary <- renderPrint({
     tab5 <- cbind(tab5, "Reference value" = c(8, NA, 12, 0.48, 11.66, NA))
     print(tab5)
     cat("\n", "logit Transport Model", "\n")
-    tab6 <- round(matrix(c(logitTransportModel(list(city = simulationInput()$cityA, population = simulationInput()$populationA), 0.01),
-                           logitTransportModel(list(city = simulationInput()$cityB, population = simulationInput()$populationB), 0.01)), 2, 1), 2)
+    tab6 <- round(matrix(c(logitTransportModel(list(city = simulationInput()$cityA, population = simulationInput()$populationA), 0.004),
+                           logitTransportModel(list(city = simulationInput()$cityB, population = simulationInput()$populationB), 0.004)), 2, 1), 2)
     rownames(tab6) <- c("Base scenario", "Do-something scenario")
     colnames(tab6) <- "Avg. travel time"
     print(tab6)
+    cat("--------------------------------------------------------------------------------")
+    cat("\n", "Inequality measures, post-taxation", "\n")
+    wage.x <- array(rep(t(getWageRate(simulationInput()$populationA)), each = getNodeCount(simulationInput()$cityA)), 
+                    dim = c(getNodeCount(simulationInput()$cityA), getNodeCount(simulationInput()$cityA), N))
+    wage.y <- array(rep(t(getWageRate(simulationInput()$populationB)), each = getNodeCount(simulationInput()$cityB)), 
+                    dim = c(getNodeCount(simulationInput()$cityB), getNodeCount(simulationInput()$cityB), N))
+    gini.x <- ineq(apply((1-input$tau)*getProbability(simulationInput()$populationA)*wage.x*getArgMax(simulationInput()$populationA)[ , , , 1], 3, sum))
+    gini.y <- ineq(apply((1-input$tau)*getProbability(simulationInput()$populationB)*wage.y*getArgMax(simulationInput()$populationB)[ , , , 1], 3, sum))
+    tab_ineq <- cbind(gini.x, gini.y)
+    colnames(tab_ineq) <- c("Base scenario", "Do-something scenario")
+    rownames(tab_ineq) <- c("Gini")
+    print(tab_ineq)
   })
 })

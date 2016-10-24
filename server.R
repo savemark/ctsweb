@@ -12,6 +12,7 @@ library(akima)
 library(plot3D)
 library(tidyr)
 library(ggplot2)
+library(ineq)
 
 source("data.R")
 source("city.R")

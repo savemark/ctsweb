@@ -3,7 +3,8 @@ utilityOptimClosure <- function(beta2, beta3, beta4, beta5, tau) {
   # conditions on the parameters
   if(beta2+beta3+beta4 != 1)
     stop("The parameters of the utility function does not sum to 1.")
-  stopifnot(all(c(beta2, beta3, beta4, beta5) > 0))
+  if(!all(c(beta2, beta3, beta4, beta5) > 0))
+    stop("The parameters of the utlity functions must be positive.")
   stopifnot(tau <= 1 && tau > 0)
   
   function(p, city, population, y = 100) {
@@ -12,6 +13,8 @@ utilityOptimClosure <- function(beta2, beta3, beta4, beta5, tau) {
     # We do this by turning vectors (matrices) into arrays and 
     # then doing caclulations using vectorization
     # so that we don't use too much memory (only temporarily)
+    if(!all(c(getTime(city), getCost(city))>0))
+      stop("Travel times/costs need to be positive.")
     N <- getSize(population)
     V <- getNodeCount(city)   
     p <- array(p, dim = c(V, V, N))

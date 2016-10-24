@@ -4,12 +4,12 @@ column(4,
                   wellPanel(
                     fluidRow(
                       column(6, 
-                             sliderInput("n", label = "Population size \\(N\\)", min = 2, max = 2000, value = 250, step = 1),
-                             sliderInput("delta", label = "Scale parameter \\(\\delta>0\\) for the error terms", min = 0.01, max = 0.1, value = 0.01, step = 0.001)
+                             numericInput("n", label = "Population size \\(N\\)", min = 2, max = 2000, value = 250, step = 1),
+                             numericInput("delta", label = "Scale parameter \\(\\delta>0\\) for the error terms", min = 0.01, max = 0.1, value = 0.01, step = 0.001)
                       ),
                       column(6,
-                             sliderInput("tau", label = "Taxation rate \\(\\tau\\)", min = 0, max = 0.5, value = 0.30, step = 0.01),
-                             sliderInput("spillover.eps", label = "Spillover effect parameter \\(\\gamma\\)", min = 0, max = 0.05, value = 0, step = 0.01)
+                             numericInput("tau", label = "Taxation rate \\(\\tau\\)", min = 0, max = 0.5, value = 0.30, step = 0.01),
+                             numericInput("spillover.eps", label = "Spillover effect parameter \\(\\gamma\\)", min = 0, max = 0.05, value = 0, step = 0.01)
                       )
                     ),
                     fluidRow(
@@ -28,9 +28,9 @@ column(4,
                   wellPanel(
                     fluidRow(
                       column(12, 
-                             sliderInput("beta2", label = "Consumption parameter \\(\\beta_\\text{CO}\\)", min = 0, max = 1, value = 0.265, step = 0.001),
-                             sliderInput("beta4", label = "Land-use parameter \\(\\beta_\\text{LU}\\)", min = 0, max = 1, value = 0.089, step = 0.001),
-                             sliderInput("beta3", label = "Leisure time parameter \\(\\beta_\\text{LE}\\)", min = 0, max = 1, value = 0.646, step = 0.001)
+                             numericInput("beta2", label = "Consumption parameter \\(\\beta_\\text{CO}\\)", min = 0, max = 1, value = 0.265, step = 0.001),
+                             numericInput("beta4", label = "Land-use parameter \\(\\beta_\\text{LU}\\)", min = 0, max = 1, value = 0.089, step = 0.001),
+                             numericInput("beta3", label = "Leisure time parameter \\(\\beta_\\text{LE}\\)", min = 0, max = 1, value = 0.646, step = 0.001)
                       )
                     ),
                     fluidRow(
@@ -58,10 +58,10 @@ column(4,
                                           inline = TRUE)
                       ),
                       column(4,
-                             sliderInput("nodes", label = "Nodes (only if Random)", value = 30, min = 10, max = 60, step = 1)
+                             numericInput("nodes", label = "Nodes (only if Random)", value = 30, min = 10, max = 60, step = 1)
                       ),
                       column(4,
-                             sliderInput("scale", label = "Scale", value = 7.5, min = 1, max = 100, step = 0.1)
+                             numericInput("scale", label = "Scale", value = 5, min = 1, max = 50, step = 0.1)
                       )
                     )
                   )
@@ -78,12 +78,12 @@ column(4,
                     hr(),
                     fluidRow(
                       column(6, 
-                             sliderInput("median", label = "Median", min = 100000, max = 400000, value = 210000, step = 1000),
-                             sliderInput("spread", label = "Spread", min = 1, max = 2, value = 1.12, step = 0.01)
+                             numericInput("median", label = "Median", min = 100000, max = 400000, value = 210000, step = 1000),
+                             numericInput("spread", label = "Spread", min = 1, max = 2, value = 1.12, step = 0.01)
                       ),
                       column(6, 
-                             sliderInput("days", label = "Work days per year", min = 200, max = 365, value = 228, step = 1),
-                             sliderInput("hours", label = "Hours per day", min = 4, max = 12, value = 8, step = 0.01)
+                             numericInput("days", label = "Work days per year", min = 200, max = 365, value = 228, step = 1),
+                             numericInput("hours", label = "Hours per day", min = 4, max = 12, value = 8, step = 0.01)
                       )
                     ),
                     fluidRow(
@@ -113,12 +113,12 @@ column(4,
                     h5("Origin and destination qualities"),
                     fluidRow(
                       column(6,
-                             sliderInput("omean", label = "Origin \\(\\mu\\)", min = -10, max = 10, value = 0, step = 0.01),
-                             sliderInput("osd", label = "Origin \\(\\sigma\\)", min = 0, max = 10, value = 0.25, step = 0.01)
+                             numericInput("omean", label = "Origin \\(\\mu\\)", min = -10, max = 10, value = 0, step = 0.01),
+                             numericInput("osd", label = "Origin \\(\\sigma\\)", min = 0, max = 10, value = 0.25, step = 0.01)
                       ),
                       column(6,
-                             sliderInput("dmean", label = "Destination \\(\\mu\\)", min = -10, max = 10, value = 0, step = 0.01),
-                             sliderInput("dsd", label = "Destination \\(\\sigma\\)", min = 0, max = 10, value = 0.25, step = 0.01)
+                             numericInput("dmean", label = "Destination \\(\\mu\\)", min = -10, max = 10, value = 0, step = 0.01),
+                             numericInput("dsd", label = "Destination \\(\\sigma\\)", min = 0, max = 10, value = 0.25, step = 0.01)
                       )
                     ),
                     fluidRow(
