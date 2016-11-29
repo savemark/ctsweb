@@ -1,74 +1,36 @@
-simulation <- function(guess, city, population, utility, delta, spillover.eps = 0) {
-  # guess = land price guess vector
-  if (!all(guess > 0))
+systemOfEquations <- function(pw, c, t, op, dp, utility, wagerate0, area, probability, spillover) {
+  p <- array(pw[1:dim(c)[1]], dim = dim(c))
+  w <- array(rep(t(pw[-(1:dim(c)[1])]), each = dim(c)[1]), dim = dim(c)) # wage rate
+  v <- utility$indirectUtility(p, w, c, t, op, dp) # indirect utility
+  pr <- probability$density(v) # choice probabilities
+  ld <- utility$argmaxUtility(p, w, c, t)[ , , , 4] # land demand
+  diff <- c(apply(pr*ld, 1, sum, na.rm = TRUE)-area, # excess demand
+            spillover$f(pr)*wagerate0-pw[-(1:dim(c)[1])]) # wage rate fixed point
+  return(diff)
+}
+
+simulation <- function(guess, city, population, utility, probability, spillover) {
+  if (!all(guess > 0)) # guess = land price guess vector
     stop("The land price guess needs to be larger than 0.")
-  probability <- function(x, type = "logit", ...) {
-    # x indirect utility, 3-dimensional array
-    maximumProbability <- function(x, margin = 3) {
-      maxIndicator <- function(x) {
-        ifelse(x == max(x), 1, 0)
-      }
-      pr <- apply(x, margin, maxIndicator)
-      dim(pr) <- dim(x)
-      return(pr)
-    }
-    logitProbability <- function(x, delta, margin = 3) {
-      d <- dim(x)
-      y <- exp({x-array(rep(apply(x, 3, max), each = d[1]^2), dim = d)}/delta)
-      sfn <- apply(y, margin, sum, na.rm = TRUE)
-      sfn <- array(rep(sfn, each = d[1]^2), dim = d)
-      pr <- y/sfn
-      return(pr)
-    }
-    switch(type,
-           logit = logitProbability(x, ...),
-           maximum = maximumProbability(x, ...)
-    )
-  }
-  
-  knowledgeSpillover <- function(city, population, epsilon, type = "FromAll") {
-    n <- getSize(population)
-    knowledgeSpilloverFromAllButOneself <- function(city, population, epsilon) {
-      nj <- sapply(1:n, function(m) {apply(getProbability(population)[, , -m], 2, sum)}) # matrix
-      nj <- as.vector(t(nj))
-      supply <- rep(getArea(city), n) # Need to repeat the supply
-      factor <- (1+nj/supply)^epsilon
-      return(factor)
-    }
-    knowledgeSpilloverFromAll <- function(city, population, epsilon) {
-      nj <- apply(getProbability(population), 2, sum, na.rm = TRUE)
-      factor <- (1+nj/getArea(city))^epsilon
-      factor <- rep(factor, each = n)
-      return(factor)
-    }
-    switch(type,
-           FromAllButOneself = knowledgeSpilloverFromAllButOneself(city, population, epsilon),
-           FromAll = knowledgeSpilloverFromAll(city, population, epsilon)
-    )
-  }
-  
-  economyEquilibrium <- function(pw, city, population, utility, wagerate0, delta, epsilon) {
-    setWageRate(population) <- matrix(pw[-(1:getNodeCount(city))], getSize(population), getNodeCount(city))
-    u <- utility(pw[1:getNodeCount(city)], city, population)
-    setProbability(population) <- probability(u$umax, "logit", delta)
-    y <- c(apply(getProbability(population)*u$argmax[ , , , 4], 1, sum, na.rm = TRUE)-getArea(city), # excess demand
-           knowledgeSpillover(city, population, epsilon)*wagerate0-pw[-(1:getNodeCount(city))]) # wage rate fixed point
-    return(y)
-  }
-  
   wagerate0 <- as.vector(getWageRate(population)) # row vector
   pw0 <- c(guess, wagerate0) # land prices and wage rates guess
-  sol <- BBsolve(par = pw0, fn = economyEquilibrium, control = list(trace = FALSE, NM = TRUE), quiet = TRUE, 
-                city = city, population = population, utility = utility, wagerate0 = wagerate0, delta = delta, epsilon = spillover.eps)
+  c <- array(getCost(city), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))) # travel cost 
+  t <- array(getTime(city), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))) # travel time 
+  op <- array(apply(t(getOriginPreference(population)), 2, # origin-preference
+                    function(x) {matrix(rep(x, length.out = getNodeCount(city)*getNodeCount(city)), getNodeCount(city), getNodeCount(city))}), dim = c(getNodeCount(city), getNodeCount(city), getSize(population)))
+  dp <- array(rep(t(getDestinationPreference(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))) # destination-preference 
+  sol <- BBsolve(par = pw0, fn = systemOfEquations, control = list(trace = FALSE, NM = TRUE), quiet = TRUE, 
+                 c = c, t = t, op = op, dp = dp, utility = utility, wagerate0 = wagerate0, area = getArea(city), probability = probability, spillover = spillover)
   price <- sol$par[1:getNodeCount(city)] # land price p*
   wagerate <- sol$par[-(1:getNodeCount(city))] # wage rate w*
   sol$par <- price 
   setWageRate(population) <- matrix(wagerate, getSize(population), getNodeCount(city)) 
-  u <- utility(price, city, population)
-  setProbability(population) <- probability(u$umax, "logit", delta) # Probabilities with land-price p* and wage rate w*
-  setUtility(population) <- u$umax
-  setArgMax(population) <- u$argmax
-  setMarginalEffect(population) <- u$lambda
+  p <- array(price, dim = c(getNodeCount(city), getNodeCount(city), getSize(population)))
+  w <- array(rep(t(wagerate), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))) # wage rate
+  setUtility(population) <- utility$indirectUtility(p, w, c, t, op, dp)
+  setProbability(population) <- probability$density(utility$indirectUtility(p, w, c, t, op, dp)) # Probabilities with land-price p* and wage rate w*
+  setArgMax(population) <- utility$argmaxUtility(p, w, c, t)
+  setMarginalEffect(population) <- utility$marginalEffects(utility$argmaxUtility(p, w, c, t), p, w, c, t) 
   setOriginDestinationMatrix(population) <- odDemand(getProbability(population))
   return(list(population = population, solution = sol))
 }

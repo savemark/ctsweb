@@ -1,5 +1,3 @@
-library(shinythemes)
-
 renderInputs <- function(prefix) {
   tags$style(type = "text/css", paste0("#", prefix, "_cityShow", " {background-color: #ffffff;}", sep = ""))
   fluidRow(
@@ -15,7 +13,7 @@ renderInputs <- function(prefix) {
 
 shinyUI(
   fluidPage(
-    theme = shinytheme("paper"),
+    theme = "bootstrap.css", # Based on shinytheme("paper")
     withMathJax(),
     tags$style(type="text/css",
                "label {font-size: 10px;}",
@@ -26,8 +24,8 @@ shinyUI(
     helpText("Source code can be found ", a("here", href = "https://github.com/savemark/ctsweb")),
     hr(),
     fluidRow(
-      source("sidebar.R", local = T)$value,
-      source("main.R", local = T)$value
+      source("sidebar.R", local = TRUE)$value,
+      source("main.R", local = TRUE)$value
     )
   )
 )

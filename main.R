@@ -69,9 +69,17 @@ column(8,
                                       )
                              ),
                              tabPanel("Equity plots",
-                                      column(12,
-                                             plotOutput("equity")
-                                             )
+                                      fluidRow(
+                                        column(12,
+                                               plotOutput("equity")
+                                        )
+                                      ),
+                                      hr(),
+                                      fluidRow(
+                                        column(3,
+                                               numericInput("probs", "Number of income classes", value = 3, min = 1, max = 10, step = 1)
+                                        )
+                                      )
                              ),
                              tabPanel("3D Plots",
                                       column(6,

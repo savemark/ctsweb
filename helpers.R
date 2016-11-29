@@ -73,15 +73,15 @@ roah4 <- function(x, y) {
   return(roah)
 }
 
-equityPlot <- function(x) { # x comes from roah4
+equityPlot <- function(x, probs = seq(0, 1, 0.2)) { # x comes from roah4
   rs <- rowSums(x[ , 2:6])
   tab <- cbind(x, total.utility = rs)
   tab <- as.data.frame(tab)
-  range <- cut(tab[ , 1], breaks = quantile(tab[ , 1], probs = seq(0, 1, 0.2)), include.lowest = T, dig.lab = 5)
+  range <- cut(tab[ , 1], breaks = quantile(tab[ , 1], probs = probs), include.lowest = T, dig.lab = 5)
   tab <- cbind(tab, range)
   tab.ag <- aggregate(tab[ , 2:7], by = list(income = tab$range), FUN = sum)
   tab.gather <- gather(tab.ag, value = "utility", key = "variable", 2:6)
-  g <- ggplot(tab.gather, aes(x = income, y = utility)) + geom_bar(aes(weight = utility, fill = variable), stat = "identity", position = "dodge")
+  g <- ggplot(tab.gather, aes(x = income, y = utility)) + geom_bar(aes(fill = variable), stat = "identity", position = "dodge") # weight = utility, 
   g <- g + ggtitle("Utility in monetary unit per income class and per variable") + theme_bw()
   return(g)
 }
@@ -127,7 +127,7 @@ avarages <- function(x, y) {
                "VKT" = c(VKT.a, VKT.b), 
                "Travel time" = c(travelTimeAvg.a, travelTimeAvg.b), 
                "Travel cost" = c(travelCostAvg.a, travelCostAvg.b),
-               "Marginal value of Travel Time" = c(mean(votMeanA), mean(votMeanB))
+               "Marginal value of Tr. Time" = c(mean(votMeanA), mean(votMeanB))
                )
   )
 }

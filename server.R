@@ -13,19 +13,22 @@ library(plot3D)
 library(tidyr)
 library(ggplot2)
 library(ineq)
+library(shinythemes)
 
 source("data.R")
 source("city.R")
 source("population.R")
-source("utilityOptimClosure.R")
+source("utility.R")
+source("probability.R")
+source("spillover.R")
 source("simulation.R")
 source("helpers.R")
 
 shinyServer(
   function(input, output, session) {
-    source("reactives.R", local = T)
-    source("plots.R", local = T)
-    source("prints.R", local = T)
-    source("tables.R", local = T)
+    source("reactives.R", local = TRUE)
+    source("plots.R", local = TRUE)
+    source("prints.R", local = TRUE)
+    source("tables.R", local = TRUE)
   }
 )

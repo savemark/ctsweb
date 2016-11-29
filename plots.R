@@ -3,16 +3,6 @@ output$cityPlot <- renderPlot({
   plot(cityInput())
 })
 
-output$cityPlotA <- renderPlot({
-  if (is.null(simulationInput()))
-    return()  
-  isolate({
-    population <- populationInput()
-    setOriginDestinationMatrix(population) <- odDemand(simulationInput()$simulationA$probability)
-    plot(cityInputA(), population)
-  })
-})
-
 # Wage rate offers
 output$populationWageRatesHistogram <- renderPlot({
   hist(getWageRate(populationInput()), freq = FALSE, main = "", xlab = "Wage rate", 
@@ -243,11 +233,11 @@ output$equity <- renderPlot({
   if (is.null(simulationInput())) {
     return()
   } else { 
-    isolate({
+    #isolate({
       cs <- roah4(list(population = simulationInput()$populationA, city = simulationInput()$cityA, price = simulationInput()$solutionA$par, comfort = input$a_beta5), 
                   list(population = simulationInput()$populationB, city = simulationInput()$cityB, price = simulationInput()$solutionB$par, comfort = input$b_beta5))
-      equityPlot(cs)
-    })
+      equityPlot(cs, seq(0, 1, 1/input$probs))
+    #})
   }
 })
 

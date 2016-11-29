@@ -5,11 +5,13 @@ column(4,
                     fluidRow(
                       column(6, 
                              numericInput("n", label = "Population size \\(N\\)", min = 2, max = 2000, value = 250, step = 1),
-                             numericInput("delta", label = "Scale parameter \\(\\delta>0\\) for the error terms", min = 0.01, max = 0.1, value = 0.01, step = 0.001)
+                             numericInput("delta", label = "Scale parameter \\(\\delta>0\\) for the error terms", min = 0.01, max = 0.1, value = 0.01, step = 0.001),
+                             numericInput("y", label = "Exogenous income \\(y\\) per day", min = 0, max = 500, value = 100, step = 10)
                       ),
                       column(6,
                              numericInput("tau", label = "Taxation rate \\(\\tau\\)", min = 0, max = 0.5, value = 0.30, step = 0.01),
-                             numericInput("spillover.eps", label = "Spillover effect parameter \\(\\gamma\\)", min = 0, max = 0.05, value = 0, step = 0.01)
+                             numericInput("spillover.eps", label = "Spillover effect parameter \\(\\gamma\\)", min = 0, max = 0.05, value = 0, step = 0.01),
+                             numericInput("TIME", label = "Available time per day \\(T \\text{ [h]}\\)", min = 15, max = 24, value = 24, step = 1)
                       )
                     ),
                     fluidRow(
@@ -27,9 +29,13 @@ column(4,
          tabPanel("Utility function parameters",
                   wellPanel(
                     fluidRow(
-                      column(12, 
-                             numericInput("beta2", label = "Consumption parameter \\(\\beta_\\text{CO}\\)", min = 0, max = 1, value = 0.265, step = 0.001),
-                             numericInput("beta4", label = "Land-use parameter \\(\\beta_\\text{LU}\\)", min = 0, max = 1, value = 0.089, step = 0.001),
+                      column(4, 
+                             numericInput("beta2", label = "Consumption parameter \\(\\beta_\\text{CO}\\)", min = 0, max = 1, value = 0.265, step = 0.001)
+                      ),
+                      column(4,
+                             numericInput("beta4", label = "Land-use parameter \\(\\beta_\\text{LU}\\)", min = 0, max = 1, value = 0.089, step = 0.001)
+                      ),
+                      column(4,
                              numericInput("beta3", label = "Leisure time parameter \\(\\beta_\\text{LE}\\)", min = 0, max = 1, value = 0.646, step = 0.001)
                       )
                     ),
@@ -37,6 +43,21 @@ column(4,
                       column(12,
                              p("Note that \\(\\beta_\\text{CO}+\\beta_\\text{LE}+\\beta_\\text{LU}=1\\) must hold.")
                       )
+                    )
+                  )
+         ),
+         tabPanel("Logit Transport Model parameters",
+                  wellPanel(
+                    fluidRow(
+                      column(4,
+                             numericInput("sigma", label = "Calibration parameter \\(\\sigma\\)", min = 0.001, max = 0.010, value = 0.004, step = 0.001)
+                      )
+                    ),
+                    fluidRow(
+                      column(12,
+                             p("The parameter \\(\\sigma\\) is used when calcluating the elasticity of total output (pre-tax) with respect to accessibility. 
+                               It needs to be set so that the logit transport model (in the summary) is consistent with avg. travel time in the city.")
+                             )
                     )
                   )
          )
@@ -78,7 +99,7 @@ column(4,
                     hr(),
                     fluidRow(
                       column(6, 
-                             numericInput("median", label = "Median", min = 100000, max = 400000, value = 210000, step = 1000),
+                             numericInput("median", label = "Median", min = 100000, max = 400000, value = 280000, step = 1000),
                              numericInput("spread", label = "Spread", min = 1, max = 2, value = 1.12, step = 0.01)
                       ),
                       column(6, 
@@ -123,7 +144,7 @@ column(4,
                     ),
                     fluidRow(
                       column(12,
-                             p("This part controls the parameters of $$q_{n,i},\\, q_{n,j} \\sim N(\\mu, \\sigma)$$",
+                             p("This part controls the parameters of $$q^n_{i},\\, q^n_{j} \\sim N(\\mu, \\sigma)$$",
                                "in the utility function above. The number of preferences in the plots to the right
                                will be equal to the number of workers \\(N\\) times the number of nodes \\(|V|\\). Every worker is assumed to have 
                                preferences for each residential area (node) and for each work place (node).")

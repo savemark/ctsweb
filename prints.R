@@ -15,7 +15,9 @@ output$summary <- renderPrint({
     return(cat("Press run..."))      
   isolate({
     cat("Base scenario: Land prices and wage rates...", simulationInput()$solutionA$message, "\n")
+    cat("feval (BBSolve): ", simulationInput()$solutionA$feval, "\n", "iter (BBSolve): ", simulationInput()$solutionA$iter, "\n")
     cat("Do-something scenario: Land prices and wage rates...", simulationInput()$solutionB$message, "\n")
+    cat("feval (BBSolve): ", simulationInput()$solutionB$feval, "\n", "iter (BBSolve): ", simulationInput()$solutionB$iter, "\n")
     nodes <- getNodeCount(simulationInput()$cityA)
     N <- getSize(simulationInput()$populationA)
     cat("--------------------------------------------------------------------------------")
@@ -77,8 +79,8 @@ output$summary <- renderPrint({
     tab5 <- cbind(tab5, "Reference value" = c(8, NA, 12, 0.48, 11.66, NA))
     print(tab5)
     cat("\n", "logit Transport Model", "\n")
-    tab6 <- round(matrix(c(logitTransportModel(list(city = simulationInput()$cityA, population = simulationInput()$populationA), 0.004),
-                           logitTransportModel(list(city = simulationInput()$cityB, population = simulationInput()$populationB), 0.004)), 2, 1), 2)
+    tab6 <- round(matrix(c(logitTransportModel(list(city = simulationInput()$cityA, population = simulationInput()$populationA), input$sigma),
+                           logitTransportModel(list(city = simulationInput()$cityB, population = simulationInput()$populationB), input$sigma)), 2, 1), 2)
     rownames(tab6) <- c("Base scenario", "Do-something scenario")
     colnames(tab6) <- "Avg. travel time"
     print(tab6)
