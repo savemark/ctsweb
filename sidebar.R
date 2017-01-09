@@ -82,8 +82,13 @@ column(4,
                              numericInput("nodes", label = "Nodes (only if Random)", value = 30, min = 10, max = 60, step = 1)
                       ),
                       column(4,
-                             numericInput("scale", label = "Scale", value = 5, min = 1, max = 50, step = 0.1)
+                             numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 0.1)
                       )
+                    ),
+                    fluidRow(
+                      column(12,
+                             p("Nodes are coloured red, directed edges are coloured light blue and borders of zones are coloured black.")
+                             )
                     )
                   )
          )

@@ -34,51 +34,53 @@ populationInput <- reactive({ # Population
   return(x)
 })
 
-probabilityInput <- reactive({
-  x <- probabilityClosure(input$delta)
+parameters <- reactiveValues()
+
+observeEvent(input$run, {
+  parameters$tau <- input$tau
+  parameters$a_speed <- input$a_speed
+  parameters$b_speed <- input$b_speed
+  parameters$a_travel_cost <- input$a_travel_cost
+  parameters$b_travel_cost <- input$b_travel_cost
+  parameters$a_beta5 <- input$a_beta5
+  parameters$b_beta5 <- input$b_beta5
+  parameters$delta <- input$delta
+  parameters$sigma <- input$sigma
+})
+
+simulationInput <- eventReactive(input$run, { # Simulation
+  simA <- simulation(guess = rep(input$guess, getNodeCount(cityInputA())), 
+                     city = cityInputA(),
+                     population = populationInput(),
+                     utility = utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$a_beta5, 1-input$tau, input$y, input$TIME)),
+                     probability = probabilityClosure(input$delta),
+                     spillover = spilloverClosure(input$spillover.eps, getArea(cityInputA())))
+  simB <- simulation(guess = simA$solution$par[1:getNodeCount(cityInputA())], 
+                     city = cityInputB(),
+                     population = simA$population,
+                     utility = utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$b_beta5, 1-input$tau, input$y, input$TIME)),
+                     probability = probabilityClosure(input$delta),
+                     spillover = spilloverClosure(input$spillover.eps, getArea(cityInputA())))
+  x <- list(solutionA = simA$solution, 
+            solutionB = simB$solution, 
+            populationA = simA$population, 
+            populationB = simB$population,
+            cityA = cityInputA(),
+            cityB = cityInputB())
   return(x)
 })
 
-utilityInputA <- reactive({ # Utility functions
-  x <- utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$a_beta5, 1-input$tau, input$y, input$TIME))
-  return(x)
-})
-
-utilityInputB <- reactive({ # Utility functions
-  x <- utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$b_beta5, 1-input$tau, input$y, input$TIME))
-  return(x)
-})
-
-spilloverInput <- reactive({
-  x <- spilloverClosure(input$spillover.eps, getArea(cityInputA()))
-  return(x)
-})
-
-simulationInput <- reactive({ # Simulation
-  input$run
-  if (input$run == 0) {
-    return(NULL)
-  } else {      
-    isolate({
-      simA <- simulation(guess = rep(input$guess, getNodeCount(cityInputA())), 
-                         city = cityInputA(),
-                         population = populationInput(),
-                         utility = utilityInputA(),
-                         probability = probabilityInput(),
-                         spillover = spilloverInput())
-      simB <- simulation(guess = simA$solution$par[1:getNodeCount(cityInputA())], 
-                         city = cityInputB(),
-                         population = simA$population,
-                         utility = utilityInputB(),
-                         probability = probabilityInput(),
-                         spillover = spilloverInput())
-      x <- list(solutionA = simA$solution, 
-                solutionB = simB$solution, 
-                populationA = simA$population, 
-                populationB = simB$population,
-                cityA = cityInputA(),
-                cityB = cityInputB())
-      return(x)
-    })
-  }
+fixedLanduseInput <- reactive({
+  if(is.null(simulationInput())) return()
+  populationC <- simulationInput()$populationB # Or population A?
+  rsA <- array(apply(array(rep(apply(getProbability(simulationInput()$populationA), c(1, 3), sum), each = getNodeCount(simulationInput()$cityA)), 
+                           c(getNodeCount(simulationInput()$cityA), getNodeCount(simulationInput()$cityA), getSize(simulationInput()$populationA))), 3, t), 
+               c(getNodeCount(simulationInput()$cityA), getNodeCount(simulationInput()$cityA), getSize(simulationInput()$populationA))) # Sum{j} P^0_{ij}
+  rsB <- array(apply(array(rep(apply(getProbability(populationC), c(1, 3), sum), each = getNodeCount(simulationInput()$cityB)), 
+                           c(getNodeCount(simulationInput()$cityB), getNodeCount(simulationInput()$cityB), getSize(populationC))), 3, t), 
+               c(getNodeCount(simulationInput()$cityB), getNodeCount(simulationInput()$cityB), getSize(populationC))) # Sum{j} P^1_{ij}
+  #prBrsB <- aperm(apply(getProbability(simB$population), c(1, 3), function(x) x/sum(x)), c(2, 1, 3)) # P^1_{ij}/Sum_{j} P^1_{ij}
+  setProbability(populationC) <- getProbability(populationC)*(rsA/rsB)
+  setUtility(populationC) <- getUtility(populationC)+log(rsA/rsB) #parameters$delta*
+  return(populationC)
 })

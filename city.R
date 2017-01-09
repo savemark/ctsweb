@@ -10,6 +10,7 @@ city <- setClass("City",
                            network = "igraph",
                            cells = "voronoi",
                            distance = "matrix",
+                           edgepath = "matrix", # Edge-path matrix
                            time = "matrix",
                            cost = "matrix"),
                  validity = function(object) {
@@ -46,11 +47,27 @@ setMethod("getAdjacency",
           }
 )
 
+setGeneric("getGraph", function(object) {standardGeneric("getGraph")})
+setMethod("getGraph",
+          signature = "City",
+          definition = function(object) {
+            return(object@network)
+          }
+)
+
 setGeneric("getArea", function(object) {standardGeneric("getArea")})
 setMethod("getArea",
           signature = "City",
           definition = function(object) {
             return(V(object@network)$area)
+          }
+)
+
+setGeneric("getShortestPaths", function(object, from, ...) {standardGeneric("getShortestPaths")})
+setMethod("getShortestPaths",
+          signature = "City",
+          definition = function(object, from, ...) {
+            return(shortest_paths(object@network, from = from, ...))
           }
 )
 
@@ -75,6 +92,14 @@ setMethod("getDistance",
           signature = "City",
           definition = function(object) {
             return(object@distance)
+          }
+)
+
+setGeneric("getEdgePath", function(object) {standardGeneric("getEdgePath")})
+setMethod("getEdgePath",
+          signature = "City",
+          definition = function(object) {
+            return(object@edgepath)
           }
 )
 
@@ -140,31 +165,71 @@ setMethod("internalSetCostFactor",
           }
 )
 
+edgePathMatrix <- function(x) {
+  # x city
+  # returns an edge-path matrix
+  vec_shortest_paths <- Vectorize(function(i, x) {
+    shortest_paths(getGraph(x), i, weights = E(getGraph(x))$length, mode = "out", output = "epath")$epath
+  }, vectorize.args = c("i"), SIMPLIFY = FALSE) # Edge ids of the path
+  v <- length(V(getGraph(x)))
+  e <- length(E(getGraph(x)))
+  m <- matrix(0, e, v^2) # edge-path matrix
+  colindex <- 1
+  edgepathlist <- vec_shortest_paths(1:v, x) # Store edge ids of the paths
+  for (i in 1:v) {
+    for(j in 1:v) {
+      cm <- matrix(0, e, 1) # column matrix
+      cm[as_ids(edgepathlist[[i]][[j]])] <- 1 # a 1 if edge is part of the path
+      m[ , colindex] <- cm
+      colindex <- colindex + 1
+    }
+  }
+  return(m)
+}
+
+as.path.id <- function(x, from, to) {
+  # x city
+  # from (origin node id)
+  # to (destination node id)
+  # returns the path index in the path-edge matrix for an origin i and destination j
+  v <- getNodeCount(x)
+  pathid <- (from-1)*v+to
+  return(pathid)
+}
+
 setMethod("initialize",
           signature = "City",
           function(.Object, x, y, speed = 1, costfactor = 1) {
             .Object@coordinate <- x
             .Object@nodecount <- nrow(x)
             .Object@adjacency <- y
-            .Object@network <- graph.adjacency(y, mode = "undirected")
+            .Object@network <- graph_from_adjacency_matrix(y, mode = "directed")
             tri <- tri.mesh(x[, 1], x[, 2]) # zone area
+            # tri <- add.constraint(tri, 
+            #                       c(min(x[ , 1])-0.1*range(x[ , 1]), min(x[ , 1])-0.1*range(x[ , 1]), max(x[ , 1])+0.1*range(x[ , 1]), max(x[ , 1])+0.1*range(x[ , 1])), 
+            #                       c(min(x[ , 2])-0.1*range(x[ , 2]), max(x[ , 2])+0.1*range(x[ , 2]), max(x[ , 2])+0.1*range(x[ , 2]), min(x[ , 2])-0.1*range(x[ , 2])), 
+            #                       reverse = FALSE)
             .Object@cells <- voronoi.mosaic(tri)
             node.area <- voronoi.area(.Object@cells)
+            #node.area <- rev(node.area)[-(1:4)]
+            #node.area <- rev(node.area)
             node.area[is.na(node.area)] <- max(node.area, na.rm = TRUE) # For simplicity
             V(.Object@network)$area <- node.area
-            # Graph coordinates
-            V(.Object@network)$x <- x[ , 1]
-            V(.Object@network)$y <- x[ , 2]
-            # link length, speed, time, cost
-            edge.length <- y*rdist(x)
-            edge.length <- edge.length[lower.tri(edge.length)]
-            edge.length <- edge.length[edge.length > 0]
+            # Vertex size
+            #deg <- degree(.Object@network, mode = "all")
+            #V(.Object@network)$size <- deg
+            V(.Object@network)$x <- x[ , 1] # Node coordinates
+            V(.Object@network)$y <- x[ , 2] # Node coordinates
+            edge.length <- y*rdist(x) # link length, speed, time, cost
+            edge.length <- t(edge.length)[t(edge.length)>0]
             E(.Object@network)$length <- edge.length
-            .Object@distance <- shortest.paths(.Object@network, V(.Object@network), weights = E(.Object@network)$length)
+            .Object@distance <- distances(.Object@network, weights = E(.Object@network)$length)
             # Set the distance within a zone to half the distance to nearest zone
             diag(.Object@distance) <- NA
             diagonal <- apply(.Object@distance, 2, min, na.rm = TRUE)
             diag(.Object@distance) <- diagonal/2
+            # Edge-Path Matrix
+            .Object@edgepath <- edgePathMatrix(.Object)
             #
             .Object <- internalSetSpeed(.Object, speed)
             .Object <- internalSetCostFactor(.Object, costfactor)
@@ -181,8 +246,8 @@ setMethod("show",
             cat("An object of class", class(object), "\n")
             cat(" ", "\n",
                 "ROAD NETWORK", "\n",
-                "Number of road network nodes: ", length(V(object@network)), "\n",
-                "Number of road network links: ", length(E(object@network)), "\n",
+                "Number of network nodes: ", length(V(object@network)), "\n",
+                "Number of network links: ", length(E(object@network)), "\n",
                 "Longest link", "\n",
                 "Id(s):", which(E(object@network)$length == max(E(object@network)$length), arr.ind = TRUE), "\n",
                 "Length: ", max(E(object@network)$length), "\n",
@@ -197,12 +262,15 @@ setMethod("show",
                 "Smallest cell area: ", min(V(object@network)$area), "\n",
                 "Id(s):", which(V(object@network)$area == min(V(object@network)$area), arr.ind = TRUE), "\n")
             cat(" ", "\n",
-                "SPEED and COSTFACTOR", "\n",
-                "Speed: ", object@speed, "\n",
-                "Costfactor: ", object@costfactor, "\n",
+                "PATHS", "\n",
+                "Number of paths: ", dim(getEdgePath(object))[2], "\n",
                 "Longest distance (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$length)), "\n",
                 "Largest travel time (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$time)), "\n",
-                "Largest travel cost (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$cost)))
+                "Largest travel cost (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$cost)), "\n")
+            cat(" ", "\n",
+                "SPEED and COSTFACTOR", "\n",
+                "Speed: ", object@speed, "\n",
+                "Costfactor: ", object@costfactor, "\n")
             invisible(NULL)
           }
 )
@@ -218,28 +286,30 @@ setMethod("plot",
             # Labels
             edge.labels <- FALSE
             if (edge.labels) {
-              edge.label <- paste(round(E(x@network)$length, 2), "\n", 
-                                  round(E(x@network)$cost, 2), "\n", 
-                                  round(E(x@network)$time, 2))
+              edge.label <- paste(round(E(x@network)$length, 2))#, "\n", 
+                                  #round(E(x@network)$cost, 2), "\n", 
+                                  #round(E(x@network)$time, 2))
             } else {
               edge.label <- NA
             }
             # Plots
             xlim <- c(min(x@coordinate[ , 1]), max(x@coordinate[ , 1]))
             ylim <- c(min(x@coordinate[ , 2]), max(x@coordinate[ , 2]))
-            par(pty = "s"
-                #mar = c(0, 0, 0, 0)+0.5, 
-                #bg = NA
-                )
+            par(pty = "s",
+                mar = c(0, 0, 0, 0) + 2, 
+                bg = "#ffffff"
+            )
             plot(0, 0, type = "n", axes = TRUE, xlim = xlim, ylim = ylim, xlab = NA, ylab = NA)
             plot(x@network, 
                  rescale = FALSE, 
-                 add = TRUE, 
-                 vertex.size = 1,
+                 add = TRUE,
+                 vertex.size = 0.1,
                  vertex.label = NA,
-                 vertex.color = "black",
-                 vertex.frame.color = "black",
+                 vertex.color = "red",
+                 vertex.frame.color = "#ffffff",
                  edge.color = "LightSkyBlue",
+                 edge.arrow.size = 0.4,
+                 edge.curved = 0.1,
                  edge.width = edge.width,
                  edge.label = edge.label,
                  edge.label.cex = 0.7,
@@ -247,70 +317,69 @@ setMethod("plot",
             plot(x@cells, 
                  add = TRUE, 
                  col = "black", 
-                 pch = NA, 
+                 do.points = FALSE,
+                 #pch = NA, 
                  main = "", 
                  sub = "")
           }
 )
 
-# setMethod("plot",
-#           signature = c(x = "City", y = "Population"),
-#           function(x, y, ...) {
-#             # Settings
-#             v <- length(V(x@network))
-#             e <- length(E(x@network))
-#             vertex.color <- rep("black", v)
-#             vertex.frame.color <- rep("NA", v)
-#             vertex.size <- rep(0.1, v)
-#             edge.color <- rep("LightSkyBlue", e)
-#             edge.flow <- rep(0, e)
-#             edge.width <- rep(1, e)
-#             # Labels
-#             edge.labels <- TRUE
-#             if (edge.labels) {
-#               edge.label <- paste(round(E(x@network)$length, 2), "\n", 
-#                                   round(E(x@network)$cost, 2), "\n", 
-#                                   round(E(x@network)$time, 2))
-#             } else {
-#               edge.label <- NA
-#             }
-#             # Origin-Destination
-#             if (!all(is.na(y@od))) {
-#               for (i in 1:v) {
-#                 for (j in 1:v) {
-#                   if(y@od[i, j] > 0 & i != j) {
-#                     edgelist <- get.shortest.paths(x@network, i, j, output = "epath")$epath[[1]]
-#                     edge.color[edgelist] <- "LightSkyBlue"
-#                     edge.flow[edgelist] <- edge.flow[edgelist] + 1
-#                     edge.width[edgelist] <- edge.width[edgelist] + y@od[i, j]
-#                   }
-#                 }
-#               }
-#               x@network <- set.edge.attribute(x@network, "color", index = E(x@network), edge.color)
-#               x@network <- set.vertex.attribute(x@network, "frame.color", index = V(x@network), vertex.frame.color)
-#               vertex.size <- {colSums(y@od)-min(colSums(y@od))}*{4/(max(colSums(y@od))-min(colSums(y@od)))}
-#               edge.width <- {edge.width-min(edge.width)}*{4/(max(edge.width)-min(edge.width))}+1
-#             }
-#             # Plots
-#             par(pty = "s", mar = c(0, 0, 0, 0)+0.1)
-#             plot(x@cells, col = "black", pch = NA, main = "", sub = "")
-#             plot(x@network, rescale = FALSE, add = TRUE, 
-#                  vertex.label = NA,
-#                  vertex.label.font = 1,
-#                  vertex.label.cex = 0.7,
-#                  vertex.label.degree = pi/2,
-#                  vertex.label.color = "black",
-#                  vertex.color = vertex.color,
-#                  vertex.frame.color = vertex.frame.color,
-#                  vertex.label.dist = 0,
-#                  vertex.size = vertex.size,
-#                  edge.color = edge.color,
-#                  edge.width = edge.width,
-#                  edge.label = edge.label,
-#                  edge.label.cex = 0.7,
-#                  edge.label.color = "black")
-#           }
-# )
+setMethod("plot",
+          signature = c(x = "City", y = "Population"),
+          function(x, y, ...) {
+            # Settings
+            v <- length(V(x@network))
+            e <- length(E(x@network))
+            vertex.color <- rep("black", v)
+            vertex.frame.color <- rep("NA", v)
+            #vertex.size <- rep(0.1, v)
+            edge.color <- rep("LightSkyBlue", e)
+            edge.flow <- rep(0, e)
+            edge.width <- rep(1, e)
+            # Labels
+            edge.labels <- FALSE
+            if (edge.labels) {
+              edge.label <- paste(round(E(x@network)$length, 2), "\n",
+                                  round(E(x@network)$cost, 2), "\n",
+                                  round(E(x@network)$time, 2))
+            } else {
+              edge.label <- NA
+            }
+            # Origin-Destination (pair-by-pair)
+            for (i in 1:v) {
+              for (j in 1:v) {
+                if(i != j) {
+                  edgelist <- as_ids(get.shortest.paths(x@network, i, j, output = "epath")$epath[[1]]) # Convert the edges to ids
+                  edge.color[edgelist] <- "LightSkyBlue"
+                  edge.flow[edgelist] <- edge.flow[edgelist] + y@od[i, j] 
+                  edge.width[edgelist] <- edge.width[edgelist] + y@od[i, j]
+                }
+              }
+            }
+            x@network <- set.edge.attribute(x@network, "color", index = E(x@network), edge.color)
+            x@network <- set.vertex.attribute(x@network, "frame.color", index = V(x@network), vertex.frame.color)
+            vertex.size <- {colSums(y@od)-min(colSums(y@od))+1}*{10/(max(colSums(y@od))-min(colSums(y@od)))}
+            edge.width <- {edge.width-min(edge.width)+1}*{10/(max(edge.width)-min(edge.width))}
+            # Plots
+            par(pty = "s", mar = c(0, 0, 0, 0)+0.1)
+            plot(x@cells, col = "black", pch = NA, main = "", sub = "")
+            plot(x@network, rescale = FALSE, add = TRUE,
+                 vertex.label = NA,
+                 vertex.label.font = 1,
+                 vertex.label.cex = 0.7,
+                 vertex.label.degree = pi/2,
+                 vertex.label.color = "black",
+                 vertex.color = vertex.color,
+                 vertex.frame.color = vertex.frame.color,
+                 vertex.label.dist = 0,
+                 vertex.size = vertex.size,
+                 edge.color = edge.color,
+                 edge.width = edge.width,
+                 edge.label = edge.label,
+                 edge.label.cex = 0.7,
+                 edge.label.color = "black")
+          }
+)
 
 city.delunay <- function(x, ...) {
   A <- matrix(0, nrow(x), nrow(x))

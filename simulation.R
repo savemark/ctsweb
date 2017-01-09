@@ -12,14 +12,14 @@ systemOfEquations <- function(pw, c, t, op, dp, utility, wagerate0, area, probab
 simulation <- function(guess, city, population, utility, probability, spillover) {
   if (!all(guess > 0)) # guess = land price guess vector
     stop("The land price guess needs to be larger than 0.")
+  setUnderlyingWageRate(population) <- getWageRate(population)
   wagerate0 <- as.vector(getWageRate(population)) # row vector
-  pw0 <- c(guess, wagerate0) # land prices and wage rates guess
   c <- array(getCost(city), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))) # travel cost 
   t <- array(getTime(city), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))) # travel time 
   op <- array(apply(t(getOriginPreference(population)), 2, # origin-preference
                     function(x) {matrix(rep(x, length.out = getNodeCount(city)*getNodeCount(city)), getNodeCount(city), getNodeCount(city))}), dim = c(getNodeCount(city), getNodeCount(city), getSize(population)))
   dp <- array(rep(t(getDestinationPreference(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))) # destination-preference 
-  sol <- BBsolve(par = pw0, fn = systemOfEquations, control = list(trace = FALSE, NM = TRUE), quiet = TRUE, 
+  sol <- BBsolve(par = c(guess, wagerate0), fn = systemOfEquations, control = list(trace = FALSE, NM = TRUE), quiet = TRUE, 
                  c = c, t = t, op = op, dp = dp, utility = utility, wagerate0 = wagerate0, area = getArea(city), probability = probability, spillover = spillover)
   price <- sol$par[1:getNodeCount(city)] # land price p*
   wagerate <- sol$par[-(1:getNodeCount(city))] # wage rate w*

@@ -47,6 +47,14 @@ column(8,
                   tabPanel("Summary",
                            wellPanel(
                              tags$style(type='text/css', '#summary {background-color: rgba(255,255,255,1);}'),
+                             fluidRow(
+                               column(2,
+                                      checkboxInput("showConvergenceMessage", "Show convergence message", value = FALSE)
+                               ),
+                               column(2,
+                                      checkboxInput("fixedLanduse", "Show fixed land-use analysis", value = FALSE)
+                               )
+                             ),
                              verbatimTextOutput("summary")
                            )
                   ),     
@@ -102,6 +110,12 @@ column(8,
                                         tabPanel("City",
                                                  dataTableOutput("simulationCityA")
                                         ),
+                                        tabPanel("Paths",
+                                                 br(),
+                                                 p("Note that Total cost (time) is the sum of link costs (times) and within-zone costs (times)."),
+                                                 br(),
+                                                 dataTableOutput("pathDataFrameA")
+                                        ),
                                         tabPanel("Population",
                                                  dataTableOutput("simulationPopulationA")
                                         )
@@ -112,8 +126,21 @@ column(8,
                                         tabPanel("City",
                                                  dataTableOutput("simulationCityB")
                                         ),
+                                        tabPanel("Paths",
+                                                 br(),
+                                                 p("Note that Total cost (time) is the sum of link costs (times) and within-zone costs (times)."),
+                                                 br(),
+                                                 dataTableOutput("pathDataFrameB")
+                                        ),
                                         tabPanel("Population",
                                                  dataTableOutput("simulationPopulationB")
+                                        )
+                                      )
+                             ),
+                             tabPanel("Fixed land-use", 
+                                      tabsetPanel(
+                                        tabPanel("Population",
+                                                 dataTableOutput("simulationPopulationC")
                                         )
                                       )
                              )

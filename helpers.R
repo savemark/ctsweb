@@ -4,17 +4,19 @@ odDemand <- function(x) {
   return(odm)
 }
 
-roth2 <- function(x, y, comfort) {
+equivalentVariation <- function(x, y, sigma) {
   # x, y list(population, city)
-  # comfort vector, two values
-  votMeanA <- apply(getProbability(x$population)*getMarginalEffect(x$population)[ , , , 3]/getMarginalEffect(x$population)[ , , , 1], c(1,2), 
-                    sum, na.rm = TRUE)/apply(getProbability(x$population), c(1,2), sum, na.rm = TRUE)
-  marginalUtilityOfIncomeMeanA <- apply(getProbability(x$population)*(1/getMarginalEffect(y$population)[ , , , 1]), c(1,2), 
-                                       sum, na.rm = TRUE)/apply(getProbability(x$population), c(1,2), sum, na.rm = TRUE)
-  cs <- sum(0.5*(odDemand(getProbability(x$population))+odDemand(getProbability(y$population)))*(-(getCost(y$city)-getCost(x$city))
-                                                                                                   +votMeanA*(getTime(y$city)-getTime(x$city))
-                                                                                                   +marginalUtilityOfIncomeMeanA*(-getTime(x$city))*(comfort[2]-comfort[1])))
-  return(cs)
+  # We need to subtract the maximum of the indrect utilities for each choice set, 
+  # otherwise the logsum will not be possible to calculate (because it will be too large)
+  maxu.x <- apply(getUtility(x$population), 3, max)
+  maxu.xa <- array(rep(maxu.x, each = getNodeCount(x$city)^2), dim = c(getNodeCount(x$city), getNodeCount(x$city), getSize(x$population)))
+  maxu.y <- apply(getUtility(y$population), 3, max)
+  maxu.ya <- array(rep(maxu.y, each = getNodeCount(y$city)^2), dim = c(getNodeCount(y$city), getNodeCount(y$city), getSize(y$population)))
+  logsum.x <- maxu.x+sigma*log(apply(exp((getUtility(x$population)-maxu.xa)/sigma), 3, sum))
+  logsum.y <- maxu.y+sigma*log(apply(exp((getUtility(y$population)-maxu.ya)/sigma), 3, sum))
+  ev <- (logsum.y-logsum.x)/(apply(getProbability(x$population)*getMarginalEffect(x$population)[ , , , 1], 3, sum))
+  ev <- sum(ev)
+  return(ev)
 }
 
 roah3 <- function(x, y) {
@@ -167,21 +169,6 @@ logElasticityProductionAccessibility <- function(x, y, mu) {
   return(((production.y-production.x)/production.x)/((accessibility.y-accessibility.x)/abs(accessibility.x))) # Note the absolute value of accessibility
 }
 
-ev2 <- function(x, y, sigma) {
-  # x, y list(population, city)
-  # We need to subtract the maximum of the indrect utilities for each choice set, 
-  # otherwise the logsum will not be possible to calculate (because it will be too large)
-  maxu.x <- apply(getUtility(x$population), 3, max)
-  maxu.xa <- array(rep(maxu.x, each = getNodeCount(x$city)^2), dim = c(getNodeCount(x$city), getNodeCount(x$city), getSize(x$population)))
-  maxu.y <- apply(getUtility(y$population), 3, max)
-  maxu.ya <- array(rep(maxu.y, each = getNodeCount(y$city)^2), dim = c(getNodeCount(y$city), getNodeCount(y$city), getSize(y$population)))
-  logsum.x <- maxu.x+sigma*log(apply(exp((getUtility(x$population)-maxu.xa)/sigma), 3, sum))
-  logsum.y <- maxu.y+sigma*log(apply(exp((getUtility(y$population)-maxu.ya)/sigma), 3, sum))
-  ev <- (logsum.y-logsum.x)/(apply(getProbability(x$population)*getMarginalEffect(x$population)[ , , , 1], 3, sum))
-  ev <- sum(ev)
-  return(ev)
-}
-
 emptyDataFrame <- function(varnames, obs = 10) {
   n <- length(varnames)
   mat <- matrix(I("-"), obs, n)
@@ -189,7 +176,7 @@ emptyDataFrame <- function(varnames, obs = 10) {
   as.data.frame(mat)
 }
 
-cityDataFrame <- function(price, population, city, digits = 4) {
+cityDataFrame <- function(price, population, city) {
   # x simulation
   nodes <- getNodeCount(city)
   N <- getSize(population)
@@ -200,43 +187,76 @@ cityDataFrame <- function(price, population, city, digits = 4) {
   home_node_share <- apply(getProbability(population), 1, sum, na.rm = TRUE)/dim(getProbability(population))[3]
   work_node_share <- apply(getProbability(population), 2, sum, na.rm = TRUE)/dim(getProbability(population))[3]
   wagerate <- array(rep(t(getWageRate(population)), each = nodes), dim = c(nodes, nodes, N))
-  production <- apply(getProbability(population)*wagerate*getArgMax(population)[ , , , 1], 2, sum, na.rm = TRUE)
+  output <- apply(getProbability(population)*wagerate*getArgMax(population)[ , , , 1], 2, sum, na.rm = TRUE)
   y <- data.frame(
     Node = 1:nodes,
-    Supply = round(supply, digits),
-    Demand = round(demand, digits),
-    Price = round(price, digits),
-    WorkerShare = round(work_node_share, digits),
-    ResidentShare = round(home_node_share, digits),
-    "Residential Density" = round(home_node_count/supply, digits),
-    Production = round(production, digits)
-    #prod.per.worker = round(prod.per.worker, 0)
-    #"Inc/h avg (R)" = round(inc.dist.node.avg.r, 0),
-    #"Inc/h avg (W)" = round(inc.dist.node.avg.w, 0),
-    #"Daily work supply avg" = round(ws.dist.node.avg, 2)
+    Supply = supply,
+    Demand = demand,
+    Price = price,
+    WorkerShare = work_node_share,
+    ResidentShare = home_node_share,
+    "Residential Density" = home_node_count/supply,
+    Output = output
+    #prod.per.worker = prod.per.worker
+    #"Inc/h avg (R)" = inc.dist.node.avg.r
+    #"Inc/h avg (W)" = inc.dist.node.avg.w
+    #"Daily work supply avg" = ws.dist.node.avg
   )
   return(y)
 }
 
-populationDataFrame <- function(population, city, digits = 4) {
+pathDataFrame <- function(x, population = NULL) {
+  # x city
+  # returns a path dataframe
+  vec_shortest_paths <- Vectorize(function(i, x) {
+    shortest_paths(getGraph(x), i, weights = E(getGraph(x))$length, mode = "out", output = "epath")$epath
+  }, vectorize.args = c("i"), SIMPLIFY = FALSE) # Edge ids of the path
+  v <- length(V(getGraph(x)))
+  e <- length(E(getGraph(x)))
+  m <- matrix(list(), v^2, 1) # column path matrix
+  cost <- matrix(list(), v^2, 1)
+  totcost <- matrix(0, v^2, 1)
+  edgepathlist <- vec_shortest_paths(1:v, x) # Store edge ids of the paths
+  pathids <- matrix(NA, v^2, 1)
+  for (i in 1:v) {
+    for (j in 1:v) {
+      m[[as.path.id(x, from = i, to = j), 1]] <- list(as_ids(edgepathlist[[i]][[j]]))
+      pathids[as.path.id(x, from = i, to = j), 1] <- as.path.id(x, from = i, to = j)
+      cost[[as.path.id(x, from = i, to = j), 1]] <- as.list(
+        (getEdgePath(x)[, as.path.id(x, i, j)]*get.edge.attribute(getGraph(x), "cost"))[getEdgePath(x)[, as.path.id(x, i, j)]*get.edge.attribute(getGraph(x), "cost")>0])
+      totcost[as.path.id(x, i, j), 1] <- getEdgePath(x)[, as.path.id(x, i, j)]%*%get.edge.attribute(getGraph(x), "cost")+getCost(x)[i, i]+getCost(x)[j, j]
+    }
+  }
+  df <- data.frame(origin = rep(1:v, each = v), 
+                   destination = rep(1:v, times = v), 
+                   "path id" = pathids, 
+                   link = m, 
+                   cost = cost, 
+                   "total cost" = totcost)
+  return(df)
+}
+
+populationDataFrame <- function(population, city) {
+  if (is.null(population)) return()
   mergeList <- function(x, y){
     df <- merge(x, y, by = intersect(names(x), names(y)))
     return(df)
   }
   nodes <- getNodeCount(city)
   N <- getSize(population)
-  df.wagerate <- array2df(array(rep(t(round(getWageRate(population), 0)), each = nodes), dim = c(nodes, nodes, N)), label.x = "Wage Rate")
-  df.vot <- array2df(round(getVoT(population), digits), label.x = "VoTT")
-  df.prob <- array2df(signif(getProbability(population), digits), label.x = "Pr")
-  df.vou <- array2df(round(getVoU(population), digits), label.x = "VoU")
-  df.u <- array2df(round(getUtility(population), digits), label.x = "Ind utility")
-  df.x1 <- array2df(round(getArgMax(population)[ , , , 1], digits), label.x = "x1")
-  df.x2 <- array2df(round(getArgMax(population)[ , , , 2], digits), label.x = "x2")
-  df.x3 <- array2df(round(getArgMax(population)[ , , , 3], digits), label.x = "x3")
-  df.x4 <- array2df(round(getArgMax(population)[ , , , 4], digits), label.x = "x4")
-  df.x5 <- array2df(round(getArgMax(population)[ , , , 5], digits), label.x = "x5")
-  df <- Reduce(mergeList, list(df.prob, df.wagerate, df.vot, df.vou, df.u, df.x1, df.x2, df.x3, df.x4, df.x5))
-  df <- df[ , c("d3", "d1", "d2", "Pr", "Wage Rate", "VoTT", "VoU", "Ind utility", "x1", "x2", "x3", "x4", "x5")]
+  df.wagerate.u <- array2df(array(rep(t(getUnderlyingWageRate(population)), each = nodes), dim = c(nodes, nodes, N)), label.x = "Under. Wage Rate")
+  df.wagerate <- array2df(array(rep(t(getWageRate(population)), each = nodes), dim = c(nodes, nodes, N)), label.x = "Wage Rate")
+  df.vot <- array2df(getVoT(population), label.x = "VoTT")
+  df.prob <- array2df(getProbability(population), label.x = "Pr")
+  df.vou <- array2df(getVoU(population), label.x = "VoU")
+  df.u <- array2df(getUtility(population), label.x = "Ind utility")
+  df.x1 <- array2df(getArgMax(population)[ , , , 1], label.x = "x1")
+  df.x2 <- array2df(getArgMax(population)[ , , , 2], label.x = "x2")
+  df.x3 <- array2df(getArgMax(population)[ , , , 3], label.x = "x3")
+  df.x4 <- array2df(getArgMax(population)[ , , , 4], label.x = "x4")
+  df.x5 <- array2df(getArgMax(population)[ , , , 5], label.x = "x5")
+  df <- Reduce(mergeList, list(df.prob, df.wagerate.u, df.wagerate, df.vot, df.vou, df.u, df.x1, df.x2, df.x3, df.x4, df.x5))
+  df <- df[ , c("d3", "d1", "d2", "Pr", "Under. Wage Rate", "Wage Rate", "VoTT", "VoU", "Ind utility", "x1", "x2", "x3", "x4", "x5")]
   df <- df[order(df$d3, df$d1, df$d2), ]
   names(df)[1:3] <- c("n", "i", "j")
   row.names(df) <- NULL
