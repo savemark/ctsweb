@@ -139,6 +139,15 @@ column(8,
                              ),
                              tabPanel("Fixed land-use", 
                                       tabsetPanel(
+                                        tabPanel("City",
+                                                 dataTableOutput("simulationCityC")
+                                        ),
+                                        tabPanel("Paths",
+                                                 br(),
+                                                 p("Note that Total cost (time) is the sum of link costs (times) and within-zone costs (times)."),
+                                                 br(),
+                                                 dataTableOutput("pathDataFrameC")
+                                        ),
                                         tabPanel("Population",
                                                  dataTableOutput("simulationPopulationC")
                                         )

@@ -23,7 +23,7 @@ simulation <- function(guess, city, population, utility, probability, spillover)
                  c = c, t = t, op = op, dp = dp, utility = utility, wagerate0 = wagerate0, area = getArea(city), probability = probability, spillover = spillover)
   price <- sol$par[1:getNodeCount(city)] # land price p*
   wagerate <- sol$par[-(1:getNodeCount(city))] # wage rate w*
-  sol$par <- price 
+  setVertexPrice(city) <- price 
   setWageRate(population) <- matrix(wagerate, getSize(population), getNodeCount(city)) 
   p <- array(price, dim = c(getNodeCount(city), getNodeCount(city), getSize(population)))
   w <- array(rep(t(wagerate), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))) # wage rate
@@ -32,5 +32,5 @@ simulation <- function(guess, city, population, utility, probability, spillover)
   setArgMax(population) <- utility$argmaxUtility(p, w, c, t)
   setMarginalEffect(population) <- utility$marginalEffects(utility$argmaxUtility(p, w, c, t), p, w, c, t) 
   setOriginDestinationMatrix(population) <- odDemand(getProbability(population))
-  return(list(population = population, solution = sol))
+  return(list(city = city, population = population, solution = sol))
 }

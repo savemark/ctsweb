@@ -38,8 +38,8 @@ output$summary <- renderPrint({
   print(tab4) 
   cat("--------------------------------------------------------------------------------", "\n")
   cat("Differences in the economy from a top-down point of view", "\n")
-  lor.a <- sum(getArea(simulationInput()$cityA)*simulationInput()$solutionA$par[1:nodes])
-  lor.b <- sum(getArea(simulationInput()$cityB)*simulationInput()$solutionB$par[1:nodes])
+  lor.a <- sum(getArea(simulationInput()$cityA)*getVertexPrice(simulationInput()$cityA))
+  lor.b <- sum(getArea(simulationInput()$cityB)*getVertexPrice(simulationInput()$cityB))
   lor.diff <- lor.b-lor.a        
   tax.a <- tax(simulationInput()$cityA, simulationInput()$populationA, parameters$tau)
   tax.b <- tax(simulationInput()$cityB, simulationInput()$populationB, parameters$tau)
@@ -57,21 +57,21 @@ output$summary <- renderPrint({
   rownames(tab3) <- c("EV approximation")     
   if (input$fixedLanduse) {
     evflu <- equivalentVariation(list(city = simulationInput()$cityA, population = simulationInput()$populationA), 
-                                 list(city = simulationInput()$cityB, population = fixedLanduseInput()),
+                                 list(city = fixedLanduseInput()$city, population = fixedLanduseInput()$population),
                                  sigma = parameters$delta)   
     tab3 <- round(cbind(Estimate = c(ev, evflu)), 4)
     rownames(tab3) <- c("EV approximation", "EV approximation (FL)")   
   }
   print(tab3)
   cat("--------------------------------------------------------------------------------", "\n")
-  cat("Transport benefits with WEI", "\n")
-  roah3 <- roah3(list(population = simulationInput()$populationA, city = simulationInput()$cityA, price = simulationInput()$solutionA$par, comfort = parameters$a_beta5), 
-                 list(population = simulationInput()$populationB, city = simulationInput()$cityB, price = simulationInput()$solutionB$par, comfort = parameters$b_beta5))
+  cat("ROAH benefits with WEI", "\n")
+  roah3 <- roah3(list(population = simulationInput()$populationA, city = simulationInput()$cityA, comfort = parameters$a_beta5), 
+                 list(population = simulationInput()$populationB, city = simulationInput()$cityB, comfort = parameters$b_beta5))
   tab_roah3 <- round(cbind(Estimate = c(roah3, sum(roah3))))#, "(1)/(7) (%)" = 100*ev/roah3, "Relative error (%)" = 100*(roah3-ev)/ev), 2)
   rownames(tab_roah3) <- c("1. Travel costs", "2. Travel times", "3. Travel comfort", "4. Land prices", "5. Wage rate offers", "Sum")
   if (input$fixedLanduse) {
-    roah3flu <- roah3(list(population = simulationInput()$populationA, city = simulationInput()$cityA, price = simulationInput()$solutionA$par, comfort = parameters$a_beta5), 
-                      list(population = fixedLanduseInput(), city = simulationInput()$cityB, price = simulationInput()$solutionB$par, comfort = parameters$b_beta5))
+    roah3flu <- roah3(list(population = simulationInput()$populationA, city = simulationInput()$cityA, comfort = parameters$a_beta5), 
+                      list(population = fixedLanduseInput()$population, city = fixedLanduseInput()$city, comfort = parameters$b_beta5))
     tab_roah3 <- round(cbind(Estimate = c(roah3, sum(roah3)), "Estimate (FL)" = c(roah3flu, sum(roah3flu))), 2)
     rownames(tab_roah3) <- c("1. Travel costs", "2. Travel times", "3. Travel comfort", "4. Land prices", "5. Wage rate offers", "Sum")
   }

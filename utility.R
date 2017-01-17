@@ -13,13 +13,6 @@ indirectUtilityClosure <- function(parameter) {
 }
 
 argmaxUtilityClosure <- function(parameter) {
-  # parameter[1] = consumption beta 
-  # parameter[2] = leisure beta
-  # parameter[3] = land-use beta
-  # parameter[4] = travel time beta
-  # paramater[5] = tau
-  # parameter[6] = y (exogenous income)
-  # parameter[7] = Time (16 or 24)
   function(p, w, c, t) {
     x <- array(c(parameter[7]-t-{parameter[2]/{parameter[5]*w}}*{parameter[5]*w*(parameter[7]-t)+parameter[6]-c}, # Optimal working hours
                  parameter[1]*{parameter[5]*w*{parameter[7]-t}+parameter[6]-c}, # Optimal consumption
@@ -32,13 +25,6 @@ argmaxUtilityClosure <- function(parameter) {
 }
 
 marginalEffectsClosure <- function(parameter) {
-  # parameter[1] = consumption beta 
-  # parameter[2] = leisure beta
-  # parameter[3] = land-use beta
-  # parameter[4] = travel time beta
-  # paramater[5] = tau
-  # parameter[6] = y (exogenous income)
-  # parameter[7] = Time (16 or 24)
   function(x, p, w, c, t) {
     # x argmax
     # note that marginal utility of income is minus marginal utility of travel cost
@@ -53,13 +39,6 @@ marginalEffectsClosure <- function(parameter) {
 }
 
 utilityWrapper <- function(parameter) {
-  # parameter[1] = consumption beta 
-  # parameter[2] = leisure beta
-  # parameter[3] = land-use beta
-  # parameter[4] = travel time beta
-  # paramater[5] = tau
-  # parameter[6] = y (exogenous income)
-  # parameter[7] = Time (16 or 24)
   # This function returns a list of functions
   if(parameter[1]+parameter[2]+parameter[3] != 1)
     stop("The parameters of the utility function does not sum to 1.")

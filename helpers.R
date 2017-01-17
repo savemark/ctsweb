@@ -21,15 +21,15 @@ equivalentVariation <- function(x, y, sigma) {
 
 roah3 <- function(x, y) {
   # With comfort, land prices, wage rates
-  # x, y list(population, city, price, comfort)
+  # x, y list(population, city, comfort)
   N <- getSize(x$population)
   V <- getNodeCount(x$city)
   cost.x <- array(getCost(x$city), dim = c(V, V, N))
   cost.y <- array(getCost(y$city), dim = c(V, V, N))
   time.x <- array(getTime(x$city), dim = c(V, V, N))
   time.y <- array(getTime(y$city), dim = c(V, V, N))
-  price.x <- array(x$price, dim = c(V, V, N))
-  price.y <- array(y$price, dim = c(V, V, N))
+  price.x <- array(getVertexPrice(x$city), dim = c(V, V, N))
+  price.y <- array(getVertexPrice(y$city), dim = c(V, V, N))
   wage.x <- array(rep(t(getWageRate(x$population)), each = V), dim = c(V, V, N))
   wage.y <- array(rep(t(getWageRate(y$population)), each = V), dim = c(V, V, N))
   beta5.x <- x$comfort
@@ -50,12 +50,12 @@ roah3 <- function(x, y) {
 
 roah4 <- function(x, y) {
   # With comfort, land prices, wage rates
-  # x, y list(population, city, price, comfort)
+  # x, y list(population, city, comfort)
   # sapply(1:n, function(m) {apply(getProbability(population)[, , -m], 2, sum)})
   N <- getSize(x$population)
   V <- getNodeCount(x$city)
-  price.x <- matrix(x$price, V, V)
-  price.y <- matrix(y$price, V, V)
+  price.x <- matrix(getVertexPrice(x$city), V, V)
+  price.y <- matrix(getVertexPrice(y$city), V, V)
   wage.x <- array(rep(t(getWageRate(x$population)), each = V), dim = c(V, V, N))
   wage.y <- array(rep(t(getWageRate(y$population)), each = V), dim = c(V, V, N))
   beta5.x <- x$comfort
@@ -89,9 +89,7 @@ equityPlot <- function(x, probs = seq(0, 1, 0.2)) { # x comes from roah4
 }
 
 tax <- function(city, population, tau) {
-  nodes <- getNodeCount(city)
-  N <- getSize(population)
-  wagerate <- array(rep(t(getWageRate(population)), each = nodes), dim = c(nodes, nodes, N))
+  wagerate <- array(rep(t(getWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population)))
   sum(apply(tau*wagerate*getArgMax(population)[ , , , 1]*getProbability(population), 3, sum))
 }
 
@@ -169,6 +167,25 @@ logElasticityProductionAccessibility <- function(x, y, mu) {
   return(((production.y-production.x)/production.x)/((accessibility.y-accessibility.x)/abs(accessibility.x))) # Note the absolute value of accessibility
 }
 
+fixedLandUse <- function(x, y, sigma) {
+  # x, y list(city, population)
+  # sigma variance parameter
+  city <- x$city # Same land prices as Base scenario
+  setCostFactor(city) <- getCostFactor(y$city) # Same travel costs as Do-something scenario
+  setSpeed(city) <- getSpeed(y$city) # Same travel times as Do-something scenario
+  population <- x$population # Or population B? Would imply that probabilities due to travel comfort will be same as scenario B
+  rsA <- array(apply(array(rep(apply(getProbability(x$population), c(1, 3), sum), each = getNodeCount(x$city)), 
+                           c(getNodeCount(x$city), getNodeCount(x$city), getSize(x$population))), 3, t), 
+               c(getNodeCount(x$city), getNodeCount(x$city), getSize(x$population))) # Sum{j} P^0_{ij}
+  rsB <- array(apply(array(rep(apply(getProbability(y$population), c(1, 3), sum), each = getNodeCount(y$city)), 
+                           c(getNodeCount(y$city), getNodeCount(y$city), getSize(y$population))), 3, t), 
+               c(getNodeCount(y$city), getNodeCount(y$city), getSize(y$population))) # Sum{j} P^1_{ij}
+  #prBrsB <- aperm(apply(getProbability(y$population), c(1, 3), function(x) x/sum(x)), c(2, 1, 3)) # P^1_{ij}/Sum_{j} P^1_{ij}
+  setProbability(population) <- getProbability(y$population)*(rsA/rsB)
+  setUtility(population) <- getUtility(y$population)+sigma*log(rsA/rsB) #sigma*
+  return(list(city = city, population = population))
+}
+
 emptyDataFrame <- function(varnames, obs = 10) {
   n <- length(varnames)
   mat <- matrix(I("-"), obs, n)
@@ -176,31 +193,18 @@ emptyDataFrame <- function(varnames, obs = 10) {
   as.data.frame(mat)
 }
 
-cityDataFrame <- function(price, population, city) {
+cityDataFrame <- function(city, population) {
   # x simulation
-  nodes <- getNodeCount(city)
-  N <- getSize(population)
-  supply <- getArea(city)
-  demand <- apply(getProbability(population)*getArgMax(population)[ , , , 4], 1, sum, na.rm = TRUE)
-  node_productivity <- rep(0, nodes)
-  home_node_count <- apply(getProbability(population), 1, sum, na.rm = TRUE)
-  home_node_share <- apply(getProbability(population), 1, sum, na.rm = TRUE)/dim(getProbability(population))[3]
-  work_node_share <- apply(getProbability(population), 2, sum, na.rm = TRUE)/dim(getProbability(population))[3]
-  wagerate <- array(rep(t(getWageRate(population)), each = nodes), dim = c(nodes, nodes, N))
-  output <- apply(getProbability(population)*wagerate*getArgMax(population)[ , , , 1], 2, sum, na.rm = TRUE)
+  wagerate <- array(rep(t(getWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population)))
   y <- data.frame(
-    Node = 1:nodes,
-    Supply = supply,
-    Demand = demand,
-    Price = price,
-    WorkerShare = work_node_share,
-    ResidentShare = home_node_share,
-    "Residential Density" = home_node_count/supply,
-    Output = output
-    #prod.per.worker = prod.per.worker
-    #"Inc/h avg (R)" = inc.dist.node.avg.r
-    #"Inc/h avg (W)" = inc.dist.node.avg.w
-    #"Daily work supply avg" = ws.dist.node.avg
+    Node = 1:getNodeCount(city),
+    Supply = getArea(city),
+    Demand = apply(getProbability(population)*getArgMax(population)[ , , , 4], 1, sum, na.rm = TRUE),
+    Price = getVertexPrice(city),
+    WorkerShare = apply(getProbability(population), 2, sum, na.rm = TRUE)/getSize(population),
+    ResidentShare = apply(getProbability(population), 1, sum, na.rm = TRUE)/getSize(population),
+    "Residential Density" = apply(getProbability(population), 1, sum, na.rm = TRUE)/getArea(city),
+    Output = apply(getProbability(population)*wagerate*getArgMax(population)[ , , , 1], 2, sum, na.rm = TRUE)
   )
   return(y)
 }
@@ -208,14 +212,13 @@ cityDataFrame <- function(price, population, city) {
 pathDataFrame <- function(x, population = NULL) {
   # x city
   # returns a path dataframe
-  vec_shortest_paths <- Vectorize(function(i, x) {
-    shortest_paths(getGraph(x), i, weights = E(getGraph(x))$length, mode = "out", output = "epath")$epath
-  }, vectorize.args = c("i"), SIMPLIFY = FALSE) # Edge ids of the path
   v <- length(V(getGraph(x)))
   e <- length(E(getGraph(x)))
   m <- matrix(list(), v^2, 1) # column path matrix
   cost <- matrix(list(), v^2, 1)
   totcost <- matrix(0, v^2, 1)
+  time <- matrix(list(), v^2, 1)
+  tottime <- matrix(0, v^2, 1)
   edgepathlist <- vec_shortest_paths(1:v, x) # Store edge ids of the paths
   pathids <- matrix(NA, v^2, 1)
   for (i in 1:v) {
@@ -225,6 +228,9 @@ pathDataFrame <- function(x, population = NULL) {
       cost[[as.path.id(x, from = i, to = j), 1]] <- as.list(
         (getEdgePath(x)[, as.path.id(x, i, j)]*get.edge.attribute(getGraph(x), "cost"))[getEdgePath(x)[, as.path.id(x, i, j)]*get.edge.attribute(getGraph(x), "cost")>0])
       totcost[as.path.id(x, i, j), 1] <- getEdgePath(x)[, as.path.id(x, i, j)]%*%get.edge.attribute(getGraph(x), "cost")+getCost(x)[i, i]+getCost(x)[j, j]
+      time[[as.path.id(x, from = i, to = j), 1]] <- as.list(
+        (getEdgePath(x)[, as.path.id(x, i, j)]*get.edge.attribute(getGraph(x), "time"))[getEdgePath(x)[, as.path.id(x, i, j)]*get.edge.attribute(getGraph(x), "time")>0])
+      tottime[as.path.id(x, i, j), 1] <- getEdgePath(x)[, as.path.id(x, i, j)]%*%get.edge.attribute(getGraph(x), "time")+getTime(x)[i, i]+getTime(x)[j, j]
     }
   }
   df <- data.frame(origin = rep(1:v, each = v), 
@@ -232,7 +238,9 @@ pathDataFrame <- function(x, population = NULL) {
                    "path id" = pathids, 
                    link = m, 
                    cost = cost, 
-                   "total cost" = totcost)
+                   "total cost" = totcost,
+                   time = time,
+                   "total time" = tottime)
   return(df)
 }
 
@@ -242,10 +250,8 @@ populationDataFrame <- function(population, city) {
     df <- merge(x, y, by = intersect(names(x), names(y)))
     return(df)
   }
-  nodes <- getNodeCount(city)
-  N <- getSize(population)
-  df.wagerate.u <- array2df(array(rep(t(getUnderlyingWageRate(population)), each = nodes), dim = c(nodes, nodes, N)), label.x = "Under. Wage Rate")
-  df.wagerate <- array2df(array(rep(t(getWageRate(population)), each = nodes), dim = c(nodes, nodes, N)), label.x = "Wage Rate")
+  df.wagerate.u <- array2df(array(rep(t(getUnderlyingWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))), label.x = "Under. Wage Rate")
+  df.wagerate <- array2df(array(rep(t(getWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))), label.x = "Wage Rate")
   df.vot <- array2df(getVoT(population), label.x = "VoTT")
   df.prob <- array2df(getProbability(population), label.x = "Pr")
   df.vou <- array2df(getVoU(population), label.x = "VoU")

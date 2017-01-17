@@ -65,22 +65,14 @@ simulationInput <- eventReactive(input$run, { # Simulation
             solutionB = simB$solution, 
             populationA = simA$population, 
             populationB = simB$population,
-            cityA = cityInputA(),
-            cityB = cityInputB())
+            cityA = simA$city,
+            cityB = simB$city)
   return(x)
 })
 
-fixedLanduseInput <- reactive({
-  if(is.null(simulationInput())) return()
-  populationC <- simulationInput()$populationB # Or population A?
-  rsA <- array(apply(array(rep(apply(getProbability(simulationInput()$populationA), c(1, 3), sum), each = getNodeCount(simulationInput()$cityA)), 
-                           c(getNodeCount(simulationInput()$cityA), getNodeCount(simulationInput()$cityA), getSize(simulationInput()$populationA))), 3, t), 
-               c(getNodeCount(simulationInput()$cityA), getNodeCount(simulationInput()$cityA), getSize(simulationInput()$populationA))) # Sum{j} P^0_{ij}
-  rsB <- array(apply(array(rep(apply(getProbability(populationC), c(1, 3), sum), each = getNodeCount(simulationInput()$cityB)), 
-                           c(getNodeCount(simulationInput()$cityB), getNodeCount(simulationInput()$cityB), getSize(populationC))), 3, t), 
-               c(getNodeCount(simulationInput()$cityB), getNodeCount(simulationInput()$cityB), getSize(populationC))) # Sum{j} P^1_{ij}
-  #prBrsB <- aperm(apply(getProbability(simB$population), c(1, 3), function(x) x/sum(x)), c(2, 1, 3)) # P^1_{ij}/Sum_{j} P^1_{ij}
-  setProbability(populationC) <- getProbability(populationC)*(rsA/rsB)
-  setUtility(populationC) <- getUtility(populationC)+log(rsA/rsB) #parameters$delta*
-  return(populationC)
+fixedLanduseInput <- eventReactive(input$run, {
+  flu <- fixedLandUse(x = list(city = simulationInput()$cityA, population = simulationInput()$populationA), 
+                      y = list(city = simulationInput()$cityB, population = simulationInput()$populationB), 
+                      sigma = parameters$delta)
+  return(list(city = flu$city, population = flu$population))
 })

@@ -10,7 +10,7 @@ column(4,
                       ),
                       column(6,
                              numericInput("tau", label = "Taxation rate \\(\\tau\\)", min = 0, max = 0.5, value = 0.30, step = 0.01),
-                             numericInput("spillover.eps", label = "Spillover effect parameter \\(\\gamma\\)", min = 0, max = 0.05, value = 0, step = 0.01),
+                             numericInput("spillover.eps", label = "Spillover effect parameter \\(\\gamma\\)", min = 0, max = 0.05, value = 0.01, step = 0.01),
                              numericInput("TIME", label = "Available time per day \\(T \\text{ [h]}\\)", min = 15, max = 24, value = 24, step = 1)
                       )
                     ),
@@ -20,7 +20,7 @@ column(4,
                              p("\\(\\tau \\in [0, 1) \\) is the tax rate parameter. When it is set to 0, the taxation rate is 0%."),
                              p("\\(\\delta > 0\\) is the scale parameter for the Gumbel distributed error terms, i.e. \\(\\epsilon^n_{ij} \\sim \\text{Gu}(0, \\delta^2).\\)"),
                              p("When workers choose work place in the same node, it is possible to include a spillover effect. 
-                    The function \\((1+\\frac{1}{A_{j}} N_j)^\\gamma\\) where \\(N_j\\) is the number of persons working in node \\(j\\), will act as a factor,  
+                    The function \\((1+\\frac{1}{A_{j}} N_j)^\\gamma\\) where \\(N_j = \\sum_{n, i} \\pi^n_{i,j}\\) is the number of persons working in node \\(j\\), will act as a factor,  
                     affecting wage rates in the node. To include it, set a value higher than 0 for \\(\\gamma\\).")
                       )
                     )
@@ -87,7 +87,7 @@ column(4,
                     ),
                     fluidRow(
                       column(12,
-                             p("Nodes are coloured red, directed edges are coloured light blue and borders of zones are coloured black.")
+                             p("Nodes are coloured red. Directed edges with high values (low values) of weighted betweenness centrality are coloured light blue (dark gray). Borders of zones are coloured black.")
                              )
                     )
                   )

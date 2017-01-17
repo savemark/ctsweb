@@ -14,6 +14,7 @@ library(tidyr)
 library(ggplot2)
 library(ineq)
 library(shinythemes)
+library(RColorBrewer)
 
 source("data.R")
 source("city.R")

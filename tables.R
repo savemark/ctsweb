@@ -6,7 +6,7 @@ output$simulationPopulationA <- renderDataTable({
 
 output$simulationCityA <- renderDataTable({
   if (is.null(simulationInput())) return()
-  return(format(cityDataFrame(simulationInput()$solutionA$par[1:getNodeCount(simulationInput()$cityA)], simulationInput()$populationA, simulationInput()$cityA), digits = 2))
+  return(format(cityDataFrame(simulationInput()$cityA, simulationInput()$populationA), digits = 2))
 }, options = (list(lengthMenu = c(50, 100))))
 
 output$pathDataFrameA <- renderDataTable({
@@ -22,7 +22,7 @@ output$simulationPopulationB <- renderDataTable({
 
 output$simulationCityB <- renderDataTable({
   if (is.null(simulationInput())) return()     
-  return(format(cityDataFrame(simulationInput()$solutionB$par[1:getNodeCount(simulationInput()$cityB)], simulationInput()$populationB, simulationInput()$cityB), digits = 2))
+  return(format(cityDataFrame(simulationInput()$cityB, simulationInput()$populationB), digits = 2))
 }, options = (list(lengthMenu = c(50, 100))))
 
 output$pathDataFrameB <- renderDataTable({
@@ -33,5 +33,15 @@ output$pathDataFrameB <- renderDataTable({
 # Fixed land-use
 output$simulationPopulationC <- renderDataTable({
   if (is.null(simulationInput())) return()
-  return(format(populationDataFrame(fixedLanduseInput(), simulationInput()$cityB), digits = 2))
+  return(format(populationDataFrame(fixedLanduseInput()$population, fixedLanduseInput()$city), digits = 2))
 }, options = (list(lengthMenu = c(50, 200, 1000))))
+
+output$simulationCityC <- renderDataTable({
+  if (is.null(simulationInput())) return()     
+  return(format(cityDataFrame(fixedLanduseInput()$city, fixedLanduseInput()$population), digits = 2))
+}, options = (list(lengthMenu = c(50, 100))))
+
+output$pathDataFrameC <- renderDataTable({
+  if (is.null(simulationInput())) return()
+  return(format(pathDataFrame(fixedLanduseInput()$city), digits = 2))
+}, options = (list(lengthMenu = c(50, 100))))
