@@ -33,8 +33,8 @@ output$x1density <- renderPlot({ # Work hours
   if (is.null(simulationInput())) return()
   weighted.densities(getArgMax(simulationInput()$populationA)[ , , , 1],
                      getArgMax(simulationInput()$populationB)[ , , , 1],
-                     getProbability(simulationInput()$populationA)/getSize(simulationInput()$populationA),
-                     getProbability(simulationInput()$populationB)/getSize(simulationInput()$populationB),
+                     getProbability(simulationInput()$populationA)/getNumberOfClasses(simulationInput()$populationA),
+                     getProbability(simulationInput()$populationB)/getNumberOfClasses(simulationInput()$populationB),
                      main = " ",
                      xlab = "Hours worked",
                      xlim = c(7, 9))
@@ -47,8 +47,8 @@ output$x2density <- renderPlot({ # Consumption
   if (is.null(simulationInput())) return()
   weighted.densities(getArgMax(simulationInput()$populationA)[ , , , 2],
                      getArgMax(simulationInput()$populationB)[ , , , 2],
-                     getProbability(simulationInput()$populationA)/getSize(simulationInput()$populationA),
-                     getProbability(simulationInput()$populationB)/getSize(simulationInput()$populationB),
+                     getProbability(simulationInput()$populationA)/getNumberOfClasses(simulationInput()$populationA),
+                     getProbability(simulationInput()$populationB)/getNumberOfClasses(simulationInput()$populationB),
                      main = " ",
                      xlab = "Consumption")
   legend("topright", 
@@ -56,15 +56,14 @@ output$x2density <- renderPlot({ # Consumption
          lty = c(1,1), col = c("red", "blue"))
 })
 
-output$x3density <- renderPlot({ # Consumption
+output$x3density <- renderPlot({ # Leisure
   if (is.null(simulationInput())) return()
   weighted.densities(getArgMax(simulationInput()$populationA)[ , , , 3],
                      getArgMax(simulationInput()$populationB)[ , , , 3],
-                     getProbability(simulationInput()$populationA)/getSize(simulationInput()$populationA),
-                     getProbability(simulationInput()$populationB)/getSize(simulationInput()$populationB),
+                     getProbability(simulationInput()$populationA)/getNumberOfClasses(simulationInput()$populationA),
+                     getProbability(simulationInput()$populationB)/getNumberOfClasses(simulationInput()$populationB),
                      main = " ",
-                     xlab = "Leisure",
-                     xlim = c(15, 18))
+                     xlab = "Leisure")
   legend("topright", 
          c('Base scenario', 'Do-something scenario'), 
          lty = c(1,1), col = c("red", "blue"))
@@ -75,8 +74,8 @@ output$x4density <- renderPlot({ # Land-use
   if (is.null(simulationInput())) return()
   weighted.densities(getArgMax(simulationInput()$populationA)[ , , , 4],
                      getArgMax(simulationInput()$populationB)[ , , , 4],
-                     getProbability(simulationInput()$populationA)/getSize(simulationInput()$populationA),
-                     getProbability(simulationInput()$populationB)/getSize(simulationInput()$populationB),
+                     getProbability(simulationInput()$populationA)/getNumberOfClasses(simulationInput()$populationA),
+                     getProbability(simulationInput()$populationB)/getNumberOfClasses(simulationInput()$populationB),
                      main = " ",
                      xlab = "Land-use")
   legend("topright", 
@@ -88,8 +87,8 @@ output$x5density <- renderPlot({ # Travel time
   if (is.null(simulationInput())) return()
   weighted.densities(getArgMax(simulationInput()$populationA)[ , , , 5],
                      getArgMax(simulationInput()$populationB)[ , , , 5],
-                     getProbability(simulationInput()$populationA)/getSize(simulationInput()$populationA),
-                     getProbability(simulationInput()$populationB)/getSize(simulationInput()$populationB),
+                     getProbability(simulationInput()$populationA)/getNumberOfClasses(simulationInput()$populationA),
+                     getProbability(simulationInput()$populationB)/getNumberOfClasses(simulationInput()$populationB),
                      main = " ",
                      xlab = "Travel time")
   legend("topright", 
@@ -101,12 +100,12 @@ output$vktdensity <- renderPlot({ # VKT
   if (is.null(simulationInput())) return()
   weighted.densities(array(getDistance(simulationInput()$cityA), dim = c(nrow(getDistance(simulationInput()$cityA)), 
                                                                          ncol(getDistance(simulationInput()$cityA)), 
-                                                                         getSize(simulationInput()$populationA))),
+                                                                         getNumberOfClasses(simulationInput()$populationA))),
                      array(getDistance(simulationInput()$cityB), dim = c(nrow(getDistance(simulationInput()$cityB)), 
                                                                          ncol(getDistance(simulationInput()$cityB)), 
-                                                                         getSize(simulationInput()$populationB))),
-                     getProbability(simulationInput()$populationA)/getSize(simulationInput()$populationA),
-                     getProbability(simulationInput()$populationB)/getSize(simulationInput()$populationB),
+                                                                         getNumberOfClasses(simulationInput()$populationB))),
+                     getProbability(simulationInput()$populationA)/getNumberOfClasses(simulationInput()$populationA),
+                     getProbability(simulationInput()$populationB)/getNumberOfClasses(simulationInput()$populationB),
                      main = " ",
                      xlab = "VKT")
   legend("topright", 
@@ -117,13 +116,13 @@ output$vktdensity <- renderPlot({ # VKT
 output$opdensity <- renderPlot({ # Origin quality
   if (is.null(simulationInput())) return()
   V <- getNodeCount(simulationInput()$cityA)
-  N <- getSize(simulationInput()$populationA)
+  N <- getNumberOfClasses(simulationInput()$populationA)
   op <- array(apply(t(getOriginPreference(simulationInput()$populationA)), 2,
                     function(x) {matrix(rep(x, length.out = V*V), V, V)}), dim = c(V, V, N))
   weighted.densities(op,
                      op,
-                     getProbability(simulationInput()$populationA)/getSize(simulationInput()$populationA),
-                     getProbability(simulationInput()$populationB)/getSize(simulationInput()$populationB),
+                     getProbability(simulationInput()$populationA)/getNumberOfClasses(simulationInput()$populationA),
+                     getProbability(simulationInput()$populationB)/getNumberOfClasses(simulationInput()$populationB),
                      main = " ",
                      xlab = "Origin quality")
   lines(density(op), lty = "dotted", col = "grey")
@@ -135,12 +134,12 @@ output$opdensity <- renderPlot({ # Origin quality
 output$dpdensity <- renderPlot({ # Destination quality
   if (is.null(simulationInput())) return()
   V <- getNodeCount(simulationInput()$cityA)
-  N <- getSize(simulationInput()$populationA)
+  N <- getNumberOfClasses(simulationInput()$populationA)
   dp <- array(rep(t(getDestinationPreference(simulationInput()$populationA)), each = V), dim = c(V, V, N)) 
   weighted.densities(dp,
                      dp,
-                     getProbability(simulationInput()$populationA)/getSize(simulationInput()$populationA),
-                     getProbability(simulationInput()$populationB)/getSize(simulationInput()$populationB),
+                     getProbability(simulationInput()$populationA)/getNumberOfClasses(simulationInput()$populationA),
+                     getProbability(simulationInput()$populationB)/getNumberOfClasses(simulationInput()$populationB),
                      main = " ",
                      xlab = "Destination quality")
   lines(density(dp), lty = "dotted", col = "grey")
@@ -155,8 +154,8 @@ output$wageratedensity <- renderPlot({ # Wage rate
     wagerate.ref <- exp(log(336000)+sqrt(2*(log(1.12)))*rnorm(10000))/{8*228}
     weighted.densities(getWageRate(simulationInput()$populationA),
                        getWageRate(simulationInput()$populationB),
-                       t(apply(getProbability(simulationInput()$populationA), c(2, 3), sum))/getSize(simulationInput()$populationA),
-                       t(apply(getProbability(simulationInput()$populationB), c(2, 3), sum))/getSize(simulationInput()$populationB),
+                       t(apply(getProbability(simulationInput()$populationA), c(2, 3), sum))/getNumberOfClasses(simulationInput()$populationA),
+                       t(apply(getProbability(simulationInput()$populationB), c(2, 3), sum))/getNumberOfClasses(simulationInput()$populationB),
                        main = " ",
                        xlab = "Wage rate",
                        ylim = range(c(density(getWageRate(simulationInput()$populationA))$y, 
@@ -174,13 +173,13 @@ output$wageratedensity <- renderPlot({ # Wage rate
 output$incomedensity <- renderPlot({ # Income
   if (is.null(simulationInput())) return()
   nodes <- getNodeCount(simulationInput()$cityA)
-  N <- getSize(simulationInput()$populationA)
+  N <- getNumberOfClasses(simulationInput()$populationA)
   wagerateA <- array(rep(t(getWageRate(simulationInput()$populationA)), each = nodes), dim = c(nodes, nodes, N))
   wagerateB <- array(rep(t(getWageRate(simulationInput()$populationB)), each = nodes), dim = c(nodes, nodes, N))    
   weighted.densities(getArgMax(simulationInput()$populationA)[ , , , 1]*wagerateA,
                      getArgMax(simulationInput()$populationB)[ , , , 1]*wagerateB,
-                     getProbability(simulationInput()$populationA)/getSize(simulationInput()$populationA),
-                     getProbability(simulationInput()$populationB)/getSize(simulationInput()$populationB),
+                     getProbability(simulationInput()$populationA)/getNumberOfClasses(simulationInput()$populationA),
+                     getProbability(simulationInput()$populationB)/getNumberOfClasses(simulationInput()$populationB),
                      main = " ",
                      xlab = "Income per day")
   legend("topright", 
@@ -194,8 +193,8 @@ output$incomedensity <- renderPlot({ # Income
 output$equity <- renderPlot({
   if (is.null(simulationInput())) return()
   #isolate({
-  cs <- roah4(list(population = simulationInput()$populationA, city = simulationInput()$cityA, price = simulationInput()$solutionA$par, comfort = input$a_beta5), 
-              list(population = simulationInput()$populationB, city = simulationInput()$cityB, price = simulationInput()$solutionB$par, comfort = input$b_beta5))
+  cs <- roah4(list(population = simulationInput()$populationA, city = simulationInput()$cityA, price = getVertexPrice(simulationInput()$cityA), comfort = input$a_beta5), 
+              list(population = simulationInput()$populationB, city = simulationInput()$cityB, price = getVertexPrice(simulationInput()$cityB), comfort = input$b_beta5))
   equityPlot(cs, seq(0, 1, 1/input$probs))
   #})
 })
@@ -204,114 +203,81 @@ output$equity <- renderPlot({
 
 output$residency3dA <- renderPlot({
   if (is.null(simulationInput())) return()
-  dens <- apply(getProbability(simulationInput()$populationA), 1, sum, na.rm = TRUE)/getArea(simulationInput()$cityA)
-  surf <- interp(getCoordinate(simulationInput()$cityA)[ , 1], getCoordinate(simulationInput()$cityA)[ , 2], dens)
-  persp3D(x = surf$x, 
-          y = surf$y,
-          z = surf$z,
-          col = gg2.col(),
-          contour = list(side = "z"),
-          lightning = "ambient",
-          shade = 0.5,
-          alpha = 1,
-          ticktype = "detailed",
-          cex.axis = 0.5,
-          zlim = range(surf$z, na.rm = TRUE),
+  persp3D(simulationInput()$cityA,
+          y = apply(getProbability(simulationInput()$populationA), 1, sum, na.rm = TRUE)/getArea(simulationInput()$cityA),
+          linear = ifelse(parameters$type == "grid", TRUE, FALSE),
           zlab = "Residence density",
           sub = "Base scenario")
 }, width = "auto")
 
 output$residency3dB <- renderPlot({
   if (is.null(simulationInput())) return()
-  dens <- apply(getProbability(simulationInput()$populationB), 1, sum, na.rm = TRUE)/getArea(simulationInput()$cityB)
-  surf <- interp(getCoordinate(simulationInput()$cityB)[ , 1], getCoordinate(simulationInput()$cityB)[ , 2], dens)
-  persp3D(x = surf$x, 
-          y = surf$y,
-          z = surf$z,
-          col = gg2.col(),
-          contour = list(side = "z"),
-          lightning = "ambient",
-          shade = 0.5,
-          alpha = 1,
-          ticktype = "detailed",
-          cex.axis = 0.5,
-          zlim = range(surf$z, na.rm = TRUE),
+  persp3D(simulationInput()$cityB,
+          apply(getProbability(simulationInput()$populationB), 1, sum, na.rm = TRUE)/getArea(simulationInput()$cityB),
+          linear = ifelse(parameters$type == "grid", TRUE, FALSE),
           zlab = "Residence density",
-          sub = "Base scenario")
+          sub = "Do-something scenario")
+}, width = "auto")
+
+output$residency3d_fixed <- renderPlot({
+  if (is.null(simulationInput())) return()
+  persp3D(simulationInput()$city_fixed,
+          apply(getProbability(simulationInput()$population_fixed), 1, sum, na.rm = TRUE)/getArea(simulationInput()$city_fixed),
+          linear = ifelse(parameters$type == "grid", TRUE, FALSE),
+          zlab = "Residence density",
+          sub = "Fixed land-use")
 }, width = "auto")
 
 output$work3dA <- renderPlot({
   if (is.null(simulationInput())) return()
-  dens <- apply(getProbability(simulationInput()$populationA), 2, sum, na.rm = TRUE)/getArea(simulationInput()$cityA)
-  surf <- interp(getCoordinate(simulationInput()$cityA)[ , 1], getCoordinate(simulationInput()$cityA)[ , 2], dens)
-  persp3D(x = surf$x, 
-          y = surf$y,
-          z = surf$z,
-          col = gg2.col(),
-          contour = list(side = "z"),
-          lightning = "ambient",
-          shade = 0.5,
-          alpha = 1,
-          ticktype = "detailed",
-          cex.axis = 0.5,
-          zlim = range(surf$z, na.rm = TRUE),
+  persp3D(simulationInput()$cityA,
+          apply(getProbability(simulationInput()$populationA), 2, sum, na.rm = TRUE)/getArea(simulationInput()$cityA),
+          linear = ifelse(parameters$type == "grid", TRUE, FALSE),
           zlab = "Worker density",
           sub = "Base scenario")
 }, width = "auto")
 
 output$work3dB <- renderPlot({
   if (is.null(simulationInput())) return()
-  dens <- apply(getProbability(simulationInput()$populationB), 2, sum, na.rm = TRUE)/getArea(simulationInput()$cityB)
-  surf <- interp(getCoordinate(simulationInput()$cityB)[ , 1], getCoordinate(simulationInput()$cityB)[ , 2], dens)
-  persp3D(x = surf$x, 
-          y = surf$y,
-          z = surf$z,
-          col = gg2.col(),
-          contour = list(side = "z"),
-          lightning = "ambient",
-          shade = 0.5,
-          alpha = 1,
-          ticktype = "detailed",
-          cex.axis = 0.5,
-          zlim = range(surf$z, na.rm = TRUE),
+  persp3D(simulationInput()$cityB,
+          apply(getProbability(simulationInput()$populationB), 2, sum, na.rm = TRUE)/getArea(simulationInput()$cityB),
+          linear = ifelse(parameters$type == "grid", TRUE, FALSE),
           zlab = "Worker density",
           sub = "Do-something scenario")
 }, width = "auto")
 
+output$work3d_fixed <- renderPlot({
+  if (is.null(simulationInput())) return()
+  persp3D(simulationInput()$city_fixed,
+          apply(getProbability(simulationInput()$population_fixed), 2, sum, na.rm = TRUE)/getArea(simulationInput()$city_fixed),
+          linear = ifelse(parameters$type == "grid", TRUE, FALSE),
+          zlab = "Worker density",
+          sub = "Fixed land-use")
+}, width = "auto")
+
 output$price3dA <- renderPlot({
   if (is.null(simulationInput())) return()
-  dens <- simulationInput()$solutionA$par[1:getNodeCount(simulationInput()$cityA)]
-  surf <- interp(getCoordinate(simulationInput()$cityA)[ , 1], getCoordinate(simulationInput()$cityA)[ , 2], dens)
-  persp3D(x = surf$x, 
-          y = surf$y,
-          z = surf$z,
-          col = gg2.col(),
-          contour = list(side = "z"),
-          lightning = "ambient",
-          shade = 0.5,
-          alpha = 1,
-          ticktype = "detailed",
-          cex.axis = 0.5,
-          zlim = range(surf$z, na.rm = TRUE),
+  persp3D(simulationInput()$cityA, 
+          getVertexPrice(simulationInput()$cityA),
+          linear = ifelse(parameters$type == "grid", TRUE, FALSE),
           zlab = "Land-price",
           sub = "Base scenario")
 }, width = "auto")
 
 output$price3dB <- renderPlot({
   if (is.null(simulationInput())) return()
-  dens <- simulationInput()$solutionB$par[1:getNodeCount(simulationInput()$cityB)]
-  surf <- interp(getCoordinate(simulationInput()$cityB)[ , 1], getCoordinate(simulationInput()$cityB)[ , 2], dens)
-  persp3D(x = surf$x, 
-          y = surf$y,
-          z = surf$z,
-          col = gg2.col(),
-          contour = list(side = "z"),
-          lightning = "ambient",
-          shade = 0.5,
-          alpha = 1,
-          ticktype = "detailed",
-          cex.axis = 0.5,
-          zlim = range(surf$z, na.rm = TRUE),
+  persp3D(simulationInput()$cityB,
+          getVertexPrice(simulationInput()$cityB),
+          linear = ifelse(parameters$type == "grid", TRUE, FALSE),
           zlab = "Land-price",
           sub = "Do-something scenario")
+}, width = "auto")
+
+output$price3d_fixed <- renderPlot({
+  if (is.null(simulationInput())) return()
+  persp3D(simulationInput()$city_fixed,
+          getVertexPrice(simulationInput()$city_fixed),
+          linear = ifelse(parameters$type == "grid", TRUE, FALSE),
+          zlab = "Land-price",
+          sub = "Fixed land-use")
 }, width = "auto")

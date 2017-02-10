@@ -1,17 +1,25 @@
 column(8,
        fluidRow(
          column(6,
+                h5("Base scenario", align = "center"),
                 tabsetPanel(
-                  tabPanel("Base scenario",
+                  tabPanel("City",
                            wellPanel(
                              renderInputs("a")
+                           )
+                  ),
+                  tabPanel("Population",
+                           wellPanel(
+                             tags$style(type = "text/css", "#populationShow {background-color: rgba(255,255,255,1);}"),
+                             verbatimTextOutput("populationShow")
                            )
                   )
                 )
          ),
          column(6,
+                h5("Do-something scenario", align = "center"),
                 tabsetPanel(
-                  tabPanel("Do-something scenario",
+                  tabPanel("City",
                            wellPanel(
                              renderInputs("b")
                            )
@@ -23,7 +31,7 @@ column(8,
          fluidRow(
            
            column(2,
-                  numericInput("guess", "Land price guess", value = 50, min = 1, max = 100)
+                  numericInput("guess", "Land price guess", value = 100, min = 1)
            ),
            column(10,
                   p("Land price guess for the Base scenario. The solution will be used as a guess for the Do-something scenario.")
@@ -49,7 +57,7 @@ column(8,
                              tags$style(type='text/css', '#summary {background-color: rgba(255,255,255,1);}'),
                              fluidRow(
                                column(2,
-                                      checkboxInput("showConvergenceMessage", "Show convergence message", value = FALSE)
+                                      checkboxInput("showConvergenceMessage", "Show convergence message", value = TRUE)
                                ),
                                column(2,
                                       checkboxInput("fixedLanduse", "Show fixed land-use analysis", value = FALSE)
@@ -90,16 +98,21 @@ column(8,
                                       )
                              ),
                              tabPanel("3D Plots",
-                                      column(6,
-                                             plotOutput("residency3dA", width = "100%", height = "600px"),
+                                      column(4,
                                              plotOutput("price3dA", width = "100%", height = "600px"),
+                                             plotOutput("residency3dA", width = "100%", height = "600px"),
                                              plotOutput("work3dA", width = "100%", height = "600px")
                                       ),
-                                      column(6,
-                                             plotOutput("residency3dB", width = "100%", height = "600px"),
+                                      column(4,
                                              plotOutput("price3dB", width = "100%", height = "600px"),
+                                             plotOutput("residency3dB", width = "100%", height = "600px"),
                                              plotOutput("work3dB", width = "100%", height = "600px")
-                                      )
+                                      ),
+                                      column(4,
+                                             plotOutput("price3d_fixed", width = "100%", height = "600px"),
+                                             plotOutput("residency3d_fixed", width = "100%", height = "600px"),
+                                             plotOutput("work3d_fixed", width = "100%", height = "600px")
+                                             )
                              )
                            )
                   ),

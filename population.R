@@ -1,6 +1,7 @@
 population <- setClass("Population",
-                       slots = c(n = "numeric",
+                       slots = c(n = "numeric", # number of distinct classes
                                  nodes = "numeric",
+                                 nk = "numeric",
                                  wagerate = "matrix",
                                  underlying.wagerate = "matrix",
                                  op = "matrix",
@@ -9,13 +10,15 @@ population <- setClass("Population",
                                  argmax = "array",
                                  lambda = "array",
                                  probability = "array",
+                                 expected.utility = "numeric",
+                                 expected.utility.rural = "numeric",
                                  od = "matrix",
                                  sectorid = "numeric"),
                        validity = function(object) {
                          if (!object@n%%1 == 0)
                            return("N needs to be an integer")
                          if (!object@n > 1)
-                           return("N must be greater than 1") # Since we are working with arrays of dimension >= 3. Could be fixed to include 1?
+                           return("N must be greater than 1") # Since we are working with arrays of dimension >= 2. Could be fixed to include 1?
                          else {
                            return(TRUE)
                          }
@@ -24,13 +27,22 @@ population <- setClass("Population",
 
 # Getters -----------------------------------------------------------------
 
-setGeneric("getSize", function(object) {standardGeneric("getSize")})
-setMethod("getSize",
+setGeneric("getNumberOfClasses", function(object) {standardGeneric("getNumberOfClasses")})
+setMethod("getNumberOfClasses",
           signature = "Population",
           definition = function(object) {
             return(object@n)
           }
 )
+
+setGeneric("getSizeOfEachClass", function(object) {standardGeneric("getSizeOfEachClass")})
+setMethod("getSizeOfEachClass",
+          signature = "Population",
+          definition = function(object) {
+            return(object@nk)
+          }
+)
+
 
 setGeneric("getNodes", function(object) {standardGeneric("getNodes")})
 setMethod("getNodes",
@@ -138,11 +150,20 @@ setMethod("getSectorID",
 
 # Setters -----------------------------------------------------------------
 
-setGeneric("setSize<-", function(object, value) {standardGeneric("setSize<-")})
-setReplaceMethod("setSize", 
+setGeneric("setNumberOfClasses<-", function(object, value) {standardGeneric("setNumberOfClasses<-")})
+setReplaceMethod("setNumberOfClasses", 
                  signature = "Population",
                  definition = function(object, value) {
                    object@n <- value
+                   return(object)
+                 }
+)
+
+setGeneric("setSizeOfEachClass<-", function(object, value) {standardGeneric("setSizeOfEachClass<-")})
+setReplaceMethod("setSizeOfEachClass",
+                 signature = "Population",
+                 definition = function(object, value) {
+                   object@nk <- value
                    return(object)
                  }
 )
@@ -247,12 +268,15 @@ setReplaceMethod("setSectorID",
                  }
 )
 
+rtruncated_log_normal <- function(x, a = - Inf, b = Inf, meanlog, sdlog) 
+  rtrunc(x, "lnorm", a = a, b = b, meanlog = meanlog, sdlog = sdlog)
+
 setMethod("initialize",
           signature = "Population",
-          function(.Object, x, y, median = 336000, spread = 1.12, days = 228, hours = 8, omean = 0, osd = 0.25, dmean = 0, dsd = 0.25, ...) {
-            setSize(.Object) <- x
-            setNodes(.Object) <- y            
-            setWageRate(.Object) <- matrix(exp(log(median)+sqrt(2*(log(spread)))*rnorm(y*x))/{hours*days}, x, y)
+          function(.Object, x, y, lowerbound = 150000, upperbound = 10^6, meanlog = log(336000), sdlog = log(100), days = 228, hours = 8, omean = 0, osd = 0.25, dmean = 0, dsd = 0.25, ...) {
+            setNumberOfClasses(.Object) <- x
+            setNodes(.Object) <- y
+            setWageRate(.Object) <- matrix(rtruncated_log_normal(y*x, a = lowerbound, b = upperbound, meanlog, sdlog)/{hours*days}, x, y)
             setUnderlyingWageRate(.Object) <- getWageRate(.Object)
             setOriginPreference(.Object) <- matrix(rnorm(x*y, mean = omean, sd = osd), x, y)
             setDestinationPreference(.Object) <- matrix(rnorm(x*y, mean = dmean, sd = dsd), x, y)          
@@ -266,21 +290,22 @@ setMethod("initialize",
 setMethod("show",
           signature = "Population",
           function(object) {
-            cat("\n", "An object of class", class(object), "\n")
+            cat("An object of class", class(object), "\n")
             cat(" ", "\n",
-                "Sector id: ", object@sectorid, "\n",
-                "Number of classes/individuals: ", object@n, "\n",
+                #"Sector id: ", object@sectorid, "\n",
+                "Number of classes: ", object@n, "\n",
+                #"Avg. number of individuals per class", mean(object@nk), "\n",
+                #"Total population", sum(object@nk),"\n",
                 "Number of sources of income: ", object@nodes, "\n")
             cat(" ", "\n",
                 "WAGE RATES AND PREFERENCES", "\n",
-                "Count of NA(s): ", length(object@wagerate[is.na(object@wagerate)]), "\n",
                 "Quantiles", "\n")
             tab <- cbind(as.matrix(quantile(object@wagerate, na.rm = TRUE)), 
                          as.matrix(quantile(object@op, na.rm = TRUE)), 
                          as.matrix(quantile(object@dp, na.rm = TRUE)))
             colnames(tab) <- c("Wage Rates", "Origin Pref.", "Destination Pref.")
             print(tab)
-            cat("PROBABILITIES", "\n",
+            cat("\n", "PROBABILITIES", "\n",
                 "Count of NA(s): ", length(object@probability[is.na(object@probability)]), "\n")
           }
 )

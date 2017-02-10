@@ -3,16 +3,13 @@ setClass("voronoi")
 
 city <- setClass("City",
                  slots = c(coordinate = "matrix",
-                           nodecount = "numeric",
                            adjacency = "matrix",
-                           speed = "numeric",
-                           costfactor = "numeric",
                            network = "igraph",
-                           cells = "voronoi",
-                           distance = "matrix",
+                           cells = "deldir", # voronoi cells
+                           distance = "matrix", # Distance matrix
                            edgepath = "matrix", # Edge-path matrix
-                           time = "matrix",
-                           cost = "matrix"),
+                           time = "matrix", # Travel time matrix
+                           cost = "matrix"), # Travel cost matrix
                  validity = function(object) {
                    if (nrow(object@coordinate) != nrow(object@adjacency))
                      paste("The number of rows of x (", nrow(object@coordinate), ") and y (", nrow(object@adjacency), ") should have been equal", sep = "")
@@ -27,7 +24,15 @@ setGeneric("getNodeCount", function(object) {standardGeneric("getNodeCount")})
 setMethod("getNodeCount",
           signature = "City",
           definition = function(object) {
-            return(object@nodecount)
+            return(length(V(object@network)))
+          }
+)
+
+setGeneric("getEdgeCount", function(object) {standardGeneric("getEdgeCount")})
+setMethod("getEdgeCount",
+          signature = "City",
+          definition = function(object) {
+            return(length(E(object@network)))
           }
 )
 
@@ -79,27 +84,11 @@ setMethod("getTime",
           }
 )
 
-setGeneric("getSpeed", function(object) {standardGeneric("getSpeed")})
-setMethod("getSpeed",
-          signature = "City",
-          definition = function(object) {
-            return(object@speed)
-          }
-)
-
 setGeneric("getCost", function(object) {standardGeneric("getCost")})
 setMethod("getCost",
           signature = "City",
           definition = function(object) {
             return(object@cost)
-          }
-)
-
-setGeneric("getCostFactor", function(object) {standardGeneric("getCostFactor")})
-setMethod("getCostFactor",
-          signature = "City",
-          definition = function(object) {
-            return(object@costfactor)
           }
 )
 
@@ -116,6 +105,14 @@ setMethod("getEdgeCost",
           signature = "City",
           definition = function(object, index = E(object@network)) {
             return(edge_attr(object@network, "cost", index))
+          }
+)
+
+setGeneric("getEdgeCostFactor", function(object, index = E(object@network)) {standardGeneric("getEdgeCostFactor")})
+setMethod("getEdgeCostFactor",
+          signature = "City",
+          definition = function(object, index = E(object@network)) {
+            return(edge_attr(object@network, "costfactor", index))
           }
 )
 
@@ -151,33 +148,35 @@ setMethod("getEdgePath",
           }
 )
 
-setGeneric("getCentrality", function(object) {standardGeneric("getCentrality")})
-setMethod("getCentrality",
+setGeneric("getVertexBetweenness", function(object, normalized = FALSE) {standardGeneric("getVertexBetweenness")})
+setMethod("getVertexBetweenness",
           signature = "City",
-          definition = function(object) {
-            return(V(object@network)$centrality)
+          definition = function(object, normalized = FALSE) {
+            if (!normalized) {
+              return(V(object@network)$betweenness)
+            } else {
+              vb <- V(object@network)$betweenness
+              nvb <- (vb-min(vb))/(max(vb)-min(vb))
+              return(nvb)
+            }
+          }
+)
+
+setGeneric("getEdgeBetweenness", function(object, normalized = FALSE) {standardGeneric("getEdgeBetweenness")})
+setMethod("getEdgeBetweenness",
+          signature = "City",
+          definition = function(object, normalized = FALSE) {
+            if (!normalized) {
+              return(E(object@network)$betweenness)
+            } else {
+              eb <- E(object@network)$betweenness
+              neb <- (eb-min(eb))/(max(eb)-min(eb))
+              return(neb)
+            }
           }
 )
 
 # Setters -----------------------------------------------------------------
-
-setGeneric("setSpeed<-", function(object, value) {standardGeneric("setSpeed<-")})
-setReplaceMethod("setSpeed",
-                 signature = "City",
-                 definition = function(object, value) {
-                   object <- internalSetSpeed(object, value)
-                   return(object)
-                 }
-)
-
-setGeneric("setCostFactor<-", function(object, value) {standardGeneric("setCostFactor<-")})
-setReplaceMethod("setCostFactor",
-                 signature = "City",
-                 definition = function(object, value) {
-                   object <- internalSetCostFactor(object, value)
-                   return(object)
-                 }
-)
 
 setGeneric("setVertexPrice", function(object, index = V(object@network), value) {standardGeneric("setVertexPrice")})
 setMethod("setVertexPrice",
@@ -197,30 +196,36 @@ setReplaceMethod("setVertexPrice",
                  }
 )
 
-setGeneric("setEdgeCost", function(object, index = E(object@network), value) {standardGeneric("setEdgeCost")})
-setMethod("setEdgeCost",
+setGeneric("setEdgeCostFactor", function(object, index = E(object@network), value) {standardGeneric("setEdgeCostFactor")})
+setMethod("setEdgeCostFactor",
           signature = "City",
           definition = function(object, index = E(object@network), value) {
-            object@network <- set_edge_attr(object@network, "cost", index, value)
-            object@cost <- shortest.paths(object@network, V(object@network), weights = E(object@network)$cost) #+diagonal.col+diagonal.row
+            object@network <- set_edge_attr(object@network, "costfactor", index, value = value)
+            object@network <- set_edge_attr(object@network, "cost", index, value = edge_attr(object@network, "length", index)*edge_attr(object@network, "costfactor", index))
+            # Within zones:
+            # diagonal.row <- object@costfactor*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance)) # Origin zone
+            # diagonal.col <- object@costfactor*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
+            # diag(diagonal.col) <- 0
+            # Total cost
+            object@cost <- distances(object@network, weights = E(object@network)$cost) #+diagonal.col+diagonal.row
             return(object)
           }
 )
 
-setGeneric("setEdgeTime", function(object, index = E(object@network), value) {standardGeneric("setEdgeTime")})
-setMethod("setEdgeTime",
-          signature = "City",
-          definition = function(object, index = E(object@network), value) {
-            object@network <- set_edge_attr(object@network, "time", index, value)
-            object@network <- set_edge_attr(object@network, "speed", index, value = edge_attr(object@network, "length", index)/edge_attr(object@network, "time", index))
-            # Within zones:
-            # diagonal.row <- (1/object@speed)*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance)) # Origin zone
-            # diagonal.col <- (1/object@speed)*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
-            # diag(diagonal.col) <- 0            
-            # Total time
-            object@time <- shortest.paths(object@network, V(object@network), weights = E(object@network)$time) #+diagonal.col+diagonal.row
-            return(object)
-          }
+setGeneric("setEdgeCostFactor<-", function(object, index = E(object@network), value) {standardGeneric("setEdgeCostFactor<-")})
+setReplaceMethod("setEdgeCostFactor",
+                 signature = "City",
+                 definition = function(object, index = E(object@network), value) {
+                   object@network <- set_edge_attr(object@network, "costfactor", index, value = value)
+                   object@network <- set_edge_attr(object@network, "cost", index, value = edge_attr(object@network, "length", index)*edge_attr(object@network, "costfactor", index))
+                   # Within zones:
+                   # diagonal.row <- object@costfactor*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance)) # Origin zone
+                   # diagonal.col <- object@costfactor*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
+                   # diag(diagonal.col) <- 0
+                   # Total cost
+                   object@cost <- distances(object@network, weights = E(object@network)$cost) #+diagonal.col+diagonal.row
+                   return(object)
+                 }
 )
 
 setGeneric("setEdgeSpeed", function(object, index = E(object@network), value) {standardGeneric("setEdgeSpeed")})
@@ -234,43 +239,25 @@ setMethod("setEdgeSpeed",
             # diagonal.col <- (1/object@speed)*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
             # diag(diagonal.col) <- 0            
             # Total time
-            object@time <- shortest.paths(object@network, V(object@network), weights = E(object@network)$time) #+diagonal.col+diagonal.row
+            object@time <- distances(object@network, weights = E(object@network)$time) #+diagonal.col+diagonal.row
             return(object)
           }
 )
 
-setGeneric("internalSetSpeed", function(object, value) {standardGeneric("internalSetSpeed")})
-setMethod("internalSetSpeed",
-          signature = "City",
-          definition = function(object, value) {
-            object@speed <- value
-            # Between zones:
-            E(object@network)$time <- E(object@network)$length/object@speed 
-            # Within zones:
-            # diagonal.row <- (1/object@speed)*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance)) # Origin zone
-            # diagonal.col <- (1/object@speed)*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
-            # diag(diagonal.col) <- 0            
-            # Total time
-            object@time <- shortest.paths(object@network, V(object@network), weights = E(object@network)$time) #+diagonal.col+diagonal.row
-            return(object)
-          }
-)
-
-setGeneric("internalSetCostFactor", function(object, value) {standardGeneric("internalSetCostFactor")})
-setMethod("internalSetCostFactor",
-          signature = "City",
-          definition = function(object, value) {
-            object@costfactor <- value
-            # Between zones:
-            E(object@network)$cost <- E(object@network)$length*object@costfactor 
-            # Within zones:
-            # diagonal.row <- object@costfactor*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance)) # Origin zone
-            # diagonal.col <- object@costfactor*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
-            # diag(diagonal.col) <- 0
-            # Total cost
-            object@cost <- shortest.paths(object@network, V(object@network), weights = E(object@network)$cost) #+diagonal.col+diagonal.row
-            return(object)
-          }
+setGeneric("setEdgeSpeed<-", function(object, index = E(object@network), value) {standardGeneric("setEdgeSpeed<-")})
+setReplaceMethod("setEdgeSpeed",
+                 signature = "City",
+                 definition = function(object, index = E(object@network), value) {
+                   object@network <- set_edge_attr(object@network, "speed", index, value)
+                   object@network <- set_edge_attr(object@network, "time", index, value = edge_attr(object@network, "length", index)/edge_attr(object@network, "speed", index))
+                   # Within zones:
+                   # diagonal.row <- (1/object@speed)*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance)) # Origin zone
+                   # diagonal.col <- (1/object@speed)*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
+                   # diag(diagonal.col) <- 0            
+                   # Total time
+                   object@time <- distances(object@network, weights = E(object@network)$time) #+diagonal.col+diagonal.row
+                   return(object)
+                 }
 )
 
 vec_shortest_paths <- Vectorize(function(i, x) {
@@ -310,20 +297,11 @@ setMethod("initialize",
           signature = "City",
           function(.Object, x, y, speed = 1, costfactor = 1) {
             .Object@coordinate <- x
-            .Object@nodecount <- nrow(x)
             .Object@adjacency <- y
             .Object@network <- graph_from_adjacency_matrix(y, mode = "directed")
-            tri <- tri.mesh(x[, 1], x[, 2]) # zone area
-            # tri <- add.constraint(tri, 
-            #                       c(min(x[ , 1])-0.1*range(x[ , 1]), min(x[ , 1])-0.1*range(x[ , 1]), max(x[ , 1])+0.1*range(x[ , 1]), max(x[ , 1])+0.1*range(x[ , 1])), 
-            #                       c(min(x[ , 2])-0.1*range(x[ , 2]), max(x[ , 2])+0.1*range(x[ , 2]), max(x[ , 2])+0.1*range(x[ , 2]), min(x[ , 2])-0.1*range(x[ , 2])), 
-            #                       reverse = FALSE)
-            .Object@cells <- voronoi.mosaic(tri)
-            node.area <- voronoi.area(.Object@cells)
-            #node.area <- rev(node.area)[-(1:4)]
-            #node.area <- rev(node.area)
-            node.area[is.na(node.area)] <- max(node.area, na.rm = TRUE) # For simplicity
-            V(.Object@network)$area <- node.area
+            tri <- deldir(x[ , 1], x[ , 2], dpl = list(ndx = 2, ndy = 2))
+            V(.Object@network)$area <- tri$summary$dir.area[1:length(x[ , 1])]
+            .Object@cells <- tri
             # Vertex size
             #deg <- degree(.Object@network, mode = "all")
             #V(.Object@network)$size <- deg
@@ -334,16 +312,17 @@ setMethod("initialize",
             E(.Object@network)$length <- edge.length
             .Object@distance <- distances(.Object@network, weights = E(.Object@network)$length)
             # Set the distance within a zone to half the distance to nearest zone
-            diag(.Object@distance) <- NA
-            diagonal <- apply(.Object@distance, 2, min, na.rm = TRUE)
-            diag(.Object@distance) <- diagonal/2
+            #diag(.Object@distance) <- NA
+            #diagonal <- apply(.Object@distance, 2, min, na.rm = TRUE)
+            #diag(.Object@distance) <- diagonal/2
             # Edge-Path Matrix
             .Object@edgepath <- edgePathMatrix(.Object)
             #
-            .Object <- internalSetSpeed(.Object, speed)
-            .Object <- internalSetCostFactor(.Object, costfactor)
+            .Object <- setEdgeSpeed(.Object, value = speed)
+            .Object <- setEdgeCostFactor(.Object, value = costfactor)
             # Vertex betweenness centrality (could use GC as weight?)
-            V(.Object@network)$centrality <- betweenness(.Object@network, V(.Object@network), weights = E(.Object@network)$length)
+            V(.Object@network)$betweenness <- betweenness(.Object@network, V(.Object@network), weights = E(.Object@network)$length)
+            E(.Object@network)$betweenness <- edge_betweenness(.Object@network, E(.Object@network), weights = E(.Object@network)$length)
             validObject(.Object)
             return(.Object)            
           }
@@ -373,13 +352,15 @@ setMethod("show",
             cat(" ", "\n",
                 "PATHS", "\n",
                 "Number of paths: ", dim(getEdgePath(object))[2], "\n",
-                "Longest distance (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$length)), "\n",
-                "Largest travel time (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$time)), "\n",
-                "Largest travel cost (shortest path) between an OD-pair: ", max(shortest.paths(object@network, V(object@network), weights = E(object@network)$cost)), "\n")
+                "Longest distance (shortest path) between an OD-pair: ", max(distances(object@network, weights = E(object@network)$length)), "\n",
+                "Largest travel time (shortest path) between an OD-pair: ", max(distances(object@network, weights = E(object@network)$time)), "\n",
+                "Largest travel cost (shortest path) between an OD-pair: ", max(distances(object@network, weights = E(object@network)$cost)), "\n")
             cat(" ", "\n",
-                "SPEED and COSTFACTOR", "\n",
-                "Speed: ", object@speed, "\n",
-                "Costfactor: ", object@costfactor, "\n")
+                "SPEEDS and COSTS on links", "\n",
+                "Speed (max): ", max(getEdgeSpeed(object)), "\n",
+                "Speed (min): ", min(getEdgeSpeed(object)), "\n",
+                "Cost (max): ", max(getEdgeCost(object)), "\n",
+                "Cost (min): ", min(getEdgeCost(object)), "\n")
             invisible(NULL)
           }
 )
@@ -401,8 +382,8 @@ setMethod("plot",
             edge.labels <- FALSE
             if (edge.labels) {
               edge.label <- paste(round(E(x@network)$length, 2))#, "\n", 
-                                  #round(E(x@network)$cost, 2), "\n", 
-                                  #round(E(x@network)$time, 2))
+              #round(E(x@network)$cost, 2), "\n", 
+              #round(E(x@network)$time, 2))
             } else {
               edge.label <- NA
             }
@@ -419,8 +400,8 @@ setMethod("plot",
                  add = TRUE,
                  vertex.size = 0.1,
                  vertex.label = NA,
-                 vertex.color = "red",
-                 vertex.frame.color = "#ffffff",
+                 vertex.color = NA,
+                 vertex.frame.color = NA,
                  edge.color = E(x@network)$edge.color,
                  edge.arrow.size = 0.4,
                  edge.curved = 0.1,
@@ -428,12 +409,42 @@ setMethod("plot",
                  edge.label.cex = 0.7,
                  edge.label.color = "black")
             plot(x@cells, 
+                 wlines = "tess",
                  add = TRUE, 
-                 col = "black", 
-                 do.points = FALSE,
-                 #pch = NA, 
+                 col = c(1, 1, 2, 3, 4), 
                  main = "", 
                  sub = "")
+          }
+)
+
+setMethod("persp3D",
+          signature = c(x = "City", y = "numeric"),
+          function(x, y, ...) {
+            args <- list(...)
+            datalen <- getNodeCount(x)
+            if (is.null(args$linear) | datalen < 4) args$linear <- TRUE else if (args$linear) args$linear <- TRUE else args$linear <- FALSE
+            if ((is.null(args$extrap) & args$linear) | datalen < 4) args$extrap <- FALSE else args$extrap <- TRUE
+            dens <- y
+            surf <- interp(x = getCoordinate(x)[ , 1], # bicubic() from package akima could be an alternative?
+                           y = getCoordinate(x)[ , 2], 
+                           z = dens, 
+                           linear = args$linear, 
+                           extrap = args$extrap)
+            persp3D(x = surf$x, 
+                    y = surf$y,
+                    z = surf$z,
+                    col = gg2.col(),
+                    contour = list(side = "z"),
+                    lightning = "ambient",
+                    resfac = 2,
+                    shade = 0.2,
+                    alpha = 1,
+                    ticktype = "detailed",
+                    cex.axis = 0.75,
+                    colkey = list(cex.axis = 0.75),
+                    zlim = range(surf$z, na.rm = TRUE),
+                    zlab = args$zlab,
+                    sub = args$sub)
           }
 )
 
@@ -475,7 +486,7 @@ setMethod("plot",
             edge.width <- {edge.width-min(edge.width)+1}*{10/(max(edge.width)-min(edge.width))}
             # Plots
             par(pty = "s", mar = c(0, 0, 0, 0)+0.1)
-            plot(x@cells, col = "black", pch = NA, main = "", sub = "")
+            plot(x@cells, wlines = "tess", col = "black", main = "", sub = "")
             plot(x@network, rescale = FALSE, add = TRUE,
                  vertex.label = NA,
                  vertex.label.font = 1,
@@ -494,18 +505,18 @@ setMethod("plot",
           }
 )
 
-city.delunay <- function(x, ...) {
+city.random <- function(x, ...) {
   A <- matrix(0, nrow(x), nrow(x))
   tri <- tri.mesh(x[, 1], x[, 2])
   for(i in 1:nrow(x)) {A[i, tripack::neighbours(tri)[[i]]] <- 1}
   return(new(Class = "City", x = x, y = A, ...))
 }
 
-city.manhattan <- function(n, ...) {
-  x <- seq(from = 0, to = 1, by = 1/n)
+city.grid <- function(n, scale = 1, ...) {
+  x <- scale*seq(from = 0, to = 1, by = 1/(n-1))
   x <- as.matrix(expand.grid(x, x))
   A <- matrix(0, nrow(x), nrow(x))
-  tri <- tri.mesh(x[ , 1], x[ , 2], duplicate = "remove")
-  for(i in 1:nrow(x)) {A[i, tripack::neighbours(tri)[[i]]] <- 1}
+  tri <- deldir(x = x[ , 1], y = x[ , 2])
+  for (i in 1:length(tri$delsgs$ind1)) {A[tri$delsgs$ind1[i], tri$delsgs$ind2[i]] <- 1; A[tri$delsgs$ind2[i], tri$delsgs$ind1[i]] <- 1}
   return(new(Class = "City", x = x, y = A, ...))
 }

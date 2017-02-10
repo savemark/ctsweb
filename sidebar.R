@@ -1,17 +1,18 @@
 column(4,
+       h5("Parameters", align = "center"),
        tabsetPanel(
-         tabPanel("Global parameters",
+         tabPanel("Global",
                   wellPanel(
                     fluidRow(
                       column(6, 
-                             numericInput("n", label = "Population size \\(N\\)", min = 2, max = 2000, value = 250, step = 1),
-                             numericInput("delta", label = "Scale parameter \\(\\delta>0\\) for the error terms", min = 0.01, max = 0.1, value = 0.01, step = 0.001),
-                             numericInput("y", label = "Exogenous income \\(y\\) per day", min = 0, max = 500, value = 100, step = 10)
+                             numericInput("n", label = "Number of classes \\(N\\)", min = 25, max = 100, value = 250, step = 1),
+                             numericInput("delta", label = "Scale parameter \\(\\delta>0\\) for the error terms", value = 0.01, step = 0.001),
+                             numericInput("y", label = "Exogenous income \\(y\\) per day", min = 0, max = 500, value = 0, step = 10)
                       ),
                       column(6,
                              numericInput("tau", label = "Taxation rate \\(\\tau\\)", min = 0, max = 0.5, value = 0.30, step = 0.01),
-                             numericInput("spillover.eps", label = "Spillover effect parameter \\(\\gamma\\)", min = 0, max = 0.05, value = 0.01, step = 0.01),
-                             numericInput("TIME", label = "Available time per day \\(T \\text{ [h]}\\)", min = 15, max = 24, value = 24, step = 1)
+                             numericInput("spillover.eps", label = "Spillover effect parameter \\(\\gamma\\)", min = 0, value = 0.03, step = 0.01),
+                             numericInput("TIME", label = "Available time per day \\(T \\text{ [h]}\\)", min = 15, max = 24, value = 16, step = 1)
                       )
                     ),
                     fluidRow(
@@ -26,17 +27,17 @@ column(4,
                     )
                   )
          ),
-         tabPanel("Utility function parameters",
+         tabPanel("Utility function",
                   wellPanel(
                     fluidRow(
                       column(4, 
-                             numericInput("beta2", label = "Consumption parameter \\(\\beta_\\text{CO}\\)", min = 0, max = 1, value = 0.265, step = 0.001)
+                             numericInput("beta2", label = "Consumption parameter \\(\\beta_\\text{CO}\\)", min = 0, max = 1, value = 0.4, step = 0.001)
                       ),
                       column(4,
-                             numericInput("beta4", label = "Land-use parameter \\(\\beta_\\text{LU}\\)", min = 0, max = 1, value = 0.089, step = 0.001)
+                             numericInput("beta4", label = "Land-use parameter \\(\\beta_\\text{LU}\\)", min = 0, max = 1, value = 0.12, step = 0.001)
                       ),
                       column(4,
-                             numericInput("beta3", label = "Leisure time parameter \\(\\beta_\\text{LE}\\)", min = 0, max = 1, value = 0.646, step = 0.001)
+                             numericInput("beta3", label = "Leisure time parameter \\(\\beta_\\text{LE}\\)", min = 0, max = 1, value = 0.48, step = 0.001)
                       )
                     ),
                     fluidRow(
@@ -46,24 +47,25 @@ column(4,
                     )
                   )
          ),
-         tabPanel("Logit Transport Model parameters",
+         tabPanel("Logit Transport Model",
                   wellPanel(
                     fluidRow(
                       column(4,
-                             numericInput("sigma", label = "Calibration parameter \\(\\sigma\\)", min = 0.001, max = 0.010, value = 0.004, step = 0.001)
+                             numericInput("sigma", label = "Calibration parameter \\(\\sigma\\)", min = 0.001, max = 0.010, value = 0.002, step = 0.001)
                       )
                     ),
                     fluidRow(
                       column(12,
                              p("The parameter \\(\\sigma\\) is used when calcluating the elasticity of total output (pre-tax) with respect to accessibility. 
                                It needs to be set so that the logit transport model (in the summary) is consistent with avg. travel time in the city.")
-                             )
+                      )
                     )
                   )
          )
        ),
+       h5("City", align = "center"),
        tabsetPanel(
-         tabPanel("City",
+         tabPanel("Plot",
                   wellPanel(
                     fluidRow(
                       column(12,
@@ -72,29 +74,51 @@ column(4,
                     ),
                     hr(),
                     fluidRow(
-                      column(4,                     
+                      column(12,                     
                              radioButtons("type", "City type:",
                                           c("Default" = "default",
-                                            "Random" = "random"),
+                                            "Random" = "random",
+                                            "Grid" = "grid"),
                                           inline = TRUE)
+                      )
+                    ),
+                    fluidRow(
+                      conditionalPanel(
+                        condition = "input.type == 'default'",
+                        column(4,
+                               numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
+                        )
                       ),
-                      column(4,
-                             numericInput("nodes", label = "Nodes (only if Random)", value = 30, min = 10, max = 60, step = 1)
+                      conditionalPanel(
+                        condition = "input.type == 'random'",
+                        column(4,
+                               numericInput("nodes", label = "Nodes", value = 30, min = 10, max = 60, step = 1)
+                        ),
+                        column(4,
+                               numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
+                        )
                       ),
-                      column(4,
-                             numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 0.1)
+                      conditionalPanel(
+                        condition = "input.type == 'grid'",
+                        column(4,
+                               numericInput("sqrtnodes", label = "\\(\\sqrt(\\text{nodes})\\)", value = 2, min = 2, max = 10, step = 1)
+                        ),
+                        column(4,
+                               numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
+                        )
                       )
                     ),
                     fluidRow(
                       column(12,
                              p("Nodes are coloured red. Directed edges with high values (low values) of weighted betweenness centrality are coloured light blue (dark gray). Borders of zones are coloured black.")
-                             )
+                      )
                     )
                   )
          )
        ),
+       h5("Distributions", align = "center"),
        tabsetPanel(
-         tabPanel("Wage rate distribution",
+         tabPanel("Wage rates",
                   wellPanel(
                     fluidRow(
                       column(12,
@@ -104,11 +128,13 @@ column(4,
                     hr(),
                     fluidRow(
                       column(6, 
-                             numericInput("median", label = "Median", min = 100000, max = 400000, value = 280000, step = 1000),
-                             numericInput("spread", label = "Spread", min = 1, max = 2, value = 1.12, step = 0.01)
+                             numericInput("meanlog", label = "log(mean)", min = log(100000), max = log(400000), value = 12.84, step = 0.01),
+                             numericInput("lowerbound", label = "Lower bound", min = 0, value = 150000, step = 1),
+                             numericInput("days", label = "Work days per year", min = 200, max = 365, value = 228, step = 1)
                       ),
                       column(6, 
-                             numericInput("days", label = "Work days per year", min = 200, max = 365, value = 228, step = 1),
+                             numericInput("sdlog", label = "log(standard deviation)", min = log(1), max = log(1000), value = 4.6, step = 1),
+                             numericInput("upperbound", label = "Upper bound", min = 0, value = 2000000, step = 1),
                              numericInput("hours", label = "Hours per day", min = 4, max = 12, value = 8, step = 0.01)
                       )
                     ),
@@ -153,9 +179,9 @@ column(4,
                                "in the utility function above. The number of preferences in the plots to the right
                                will be equal to the number of workers \\(N\\) times the number of nodes \\(|V|\\). Every worker is assumed to have 
                                preferences for each residential area (node) and for each work place (node).")
-                             )
-                             )
                       )
+                    )
+                  )
          )
        )
 )

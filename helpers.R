@@ -9,9 +9,9 @@ equivalentVariation <- function(x, y, sigma) {
   # We need to subtract the maximum of the indrect utilities for each choice set, 
   # otherwise the logsum will not be possible to calculate (because it will be too large)
   maxu.x <- apply(getUtility(x$population), 3, max)
-  maxu.xa <- array(rep(maxu.x, each = getNodeCount(x$city)^2), dim = c(getNodeCount(x$city), getNodeCount(x$city), getSize(x$population)))
+  maxu.xa <- array(rep(maxu.x, each = getNodeCount(x$city)^2), dim = c(getNodeCount(x$city), getNodeCount(x$city), getNumberOfClasses(x$population)))
   maxu.y <- apply(getUtility(y$population), 3, max)
-  maxu.ya <- array(rep(maxu.y, each = getNodeCount(y$city)^2), dim = c(getNodeCount(y$city), getNodeCount(y$city), getSize(y$population)))
+  maxu.ya <- array(rep(maxu.y, each = getNodeCount(y$city)^2), dim = c(getNodeCount(y$city), getNodeCount(y$city), getNumberOfClasses(y$population)))
   logsum.x <- maxu.x+sigma*log(apply(exp((getUtility(x$population)-maxu.xa)/sigma), 3, sum))
   logsum.y <- maxu.y+sigma*log(apply(exp((getUtility(y$population)-maxu.ya)/sigma), 3, sum))
   ev <- (logsum.y-logsum.x)/(apply(getProbability(x$population)*getMarginalEffect(x$population)[ , , , 1], 3, sum))
@@ -22,28 +22,20 @@ equivalentVariation <- function(x, y, sigma) {
 roah3 <- function(x, y) {
   # With comfort, land prices, wage rates
   # x, y list(population, city, comfort)
-  N <- getSize(x$population)
-  V <- getNodeCount(x$city)
-  cost.x <- array(getCost(x$city), dim = c(V, V, N))
-  cost.y <- array(getCost(y$city), dim = c(V, V, N))
-  time.x <- array(getTime(x$city), dim = c(V, V, N))
-  time.y <- array(getTime(y$city), dim = c(V, V, N))
-  price.x <- array(getVertexPrice(x$city), dim = c(V, V, N))
-  price.y <- array(getVertexPrice(y$city), dim = c(V, V, N))
-  wage.x <- array(rep(t(getWageRate(x$population)), each = V), dim = c(V, V, N))
-  wage.y <- array(rep(t(getWageRate(y$population)), each = V), dim = c(V, V, N))
-  beta5.x <- x$comfort
-  beta5.y <- y$comfort
-  margin1 <- getMarginalEffect(x$population)[ , , , 1] # marginal utility of income
+  cost.x <- array(getCost(x$city), dim = c(getNodeCount(x$city), getNodeCount(x$city), getNumberOfClasses(x$population)))
+  cost.y <- array(getCost(y$city), dim = c(getNodeCount(y$city), getNodeCount(y$city), getNumberOfClasses(y$population)))
+  time.x <- array(getTime(x$city), dim = c(getNodeCount(x$city), getNodeCount(x$city), getNumberOfClasses(x$population)))
+  time.y <- array(getTime(y$city), dim = c(getNodeCount(y$city), getNodeCount(y$city), getNumberOfClasses(y$population)))
+  price.x <- array(getVertexPrice(x$city), dim = c(getNodeCount(x$city), getNodeCount(x$city), getNumberOfClasses(x$population)))
+  price.y <- array(getVertexPrice(y$city), dim = c(getNodeCount(y$city), getNodeCount(y$city), getNumberOfClasses(y$population)))
+  wage.x <- array(rep(t(getWageRate(x$population)), each = getNodeCount(x$city)), dim = c(getNodeCount(x$city), getNodeCount(x$city), getNumberOfClasses(x$population)))
+  wage.y <- array(rep(t(getWageRate(y$population)), each = getNodeCount(y$city)), dim = c(getNodeCount(y$city), getNodeCount(y$city), getNumberOfClasses(y$population)))
   margin2 <- getMarginalEffect(x$population)[ , , , 2]
-  margin3 <- getMarginalEffect(x$population)[ , , , 3]
-  margin4 <- getMarginalEffect(x$population)[ , , , 4]
-  margin5 <- getMarginalEffect(x$population)[ , , , 5]
-  roah1 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*(-1)*(cost.y-cost.x)) 
-  roah2 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((margin3/margin1)*(time.y-time.x)))
-  roah3 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((-time.x/margin1)*(beta5.y-beta5.x)))
-  roah4 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((margin4/margin1)*(price.y-price.x)))
-  roah5 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((margin5/margin1)*(wage.y-wage.x)))
+  roah1 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*(-1)*(cost.y-cost.x)) # marginal value of travel cost is -1*marginal value of ex. income
+  roah2 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((getMarginalEffect(x$population)[ , , , 3]/getMarginalEffect(x$population)[ , , , 1])*(time.y-time.x)))
+  roah3 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((-time.x/getMarginalEffect(x$population)[ , , , 1])*(y$comfort-x$comfort)))
+  roah4 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((getMarginalEffect(x$population)[ , , , 4]/getMarginalEffect(x$population)[ , , , 1])*(price.y-price.x)))
+  roah5 <- sum(0.5*(getProbability(x$population)+getProbability(y$population))*((getMarginalEffect(x$population)[ , , , 5]/getMarginalEffect(x$population)[ , , , 1])*(wage.y-wage.x)))
   roah <- c(roah1, roah2, roah3, roah4, roah5)
   return(roah)
 }
@@ -52,12 +44,10 @@ roah4 <- function(x, y) {
   # With comfort, land prices, wage rates
   # x, y list(population, city, comfort)
   # sapply(1:n, function(m) {apply(getProbability(population)[, , -m], 2, sum)})
-  N <- getSize(x$population)
-  V <- getNodeCount(x$city)
-  price.x <- matrix(getVertexPrice(x$city), V, V)
-  price.y <- matrix(getVertexPrice(y$city), V, V)
-  wage.x <- array(rep(t(getWageRate(x$population)), each = V), dim = c(V, V, N))
-  wage.y <- array(rep(t(getWageRate(y$population)), each = V), dim = c(V, V, N))
+  price.x <- matrix(getVertexPrice(x$city), getNodeCount(x$city), getNodeCount(x$city))
+  price.y <- matrix(getVertexPrice(y$city), getNodeCount(y$city), getNodeCount(y$city))
+  wage.x <- array(rep(t(getWageRate(x$population)), each = getNodeCount(x$city)), dim = c(getNodeCount(x$city), getNodeCount(x$city), getNumberOfClasses(x$population)))
+  wage.y <- array(rep(t(getWageRate(y$population)), each = getNodeCount(y$city)), dim = c(getNodeCount(y$city), getNodeCount(y$city), getNumberOfClasses(y$population)))
   beta5.x <- x$comfort
   beta5.y <- y$comfort
   margin1 <- getMarginalEffect(x$population)[ , , , 1] # marginal utility of income
@@ -65,12 +55,12 @@ roah4 <- function(x, y) {
   margin3 <- getMarginalEffect(x$population)[ , , , 3]
   margin4 <- getMarginalEffect(x$population)[ , , , 4]
   margin5 <- getMarginalEffect(x$population)[ , , , 5]
-  income <- sapply(1:N, function(m) {sum(getProbability(x$population)[ , , m]*wage.x[ , , m]*getArgMax(x$population)[ , , m, 1])})
-  roah1 <- sapply(1:N, function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*(-1)*(getCost(y$city)-getCost(x$city)))}) 
-  roah2 <- sapply(1:N, function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((margin3[ , , m]/margin1[ , , m])*(getTime(y$city)-getTime(x$city))))})
-  roah3 <- sapply(1:N, function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((-getTime(x$city)/margin1[ , , m])*(beta5.y-beta5.x)))})
-  roah4 <- sapply(1:N, function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((margin4[ , , m]/margin1[ , , m])*(price.y-price.x)))})
-  roah5 <- sapply(1:N, function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((margin5[ , , m]/margin1[ , , m])*(wage.y[ , , m]-wage.x[ , , m])))})
+  income <- sapply(1:getNumberOfClasses(x$population), function(m) {sum(getProbability(x$population)[ , , m]*wage.x[ , , m]*getArgMax(x$population)[ , , m, 1])})
+  roah1 <- sapply(1:getNumberOfClasses(x$population), function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*(-1)*(getCost(y$city)-getCost(x$city)))}) 
+  roah2 <- sapply(1:getNumberOfClasses(x$population), function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((margin3[ , , m]/margin1[ , , m])*(getTime(y$city)-getTime(x$city))))})
+  roah3 <- sapply(1:getNumberOfClasses(x$population), function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((-getTime(x$city)/margin1[ , , m])*(beta5.y-beta5.x)))})
+  roah4 <- sapply(1:getNumberOfClasses(x$population), function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((margin4[ , , m]/margin1[ , , m])*(price.y-price.x)))})
+  roah5 <- sapply(1:getNumberOfClasses(x$population), function(m) {sum(0.5*(getProbability(x$population)[ , , m]+getProbability(y$population)[ , , m])*((margin5[ , , m]/margin1[ , , m])*(wage.y[ , , m]-wage.x[ , , m])))})
   roah <- cbind(income, "travel cost" = roah1, "travel time" = roah2, "travel comfort" = roah3, "land price" = roah4, "wage rate" = roah5)
   return(roah)
 }
@@ -89,16 +79,14 @@ equityPlot <- function(x, probs = seq(0, 1, 0.2)) { # x comes from roah4
 }
 
 tax <- function(city, population, tau) {
-  wagerate <- array(rep(t(getWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population)))
+  wagerate <- array(rep(t(getWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population)))
   sum(apply(tau*wagerate*getArgMax(population)[ , , , 1]*getProbability(population), 3, sum))
 }
 
 wageSum <- function(x, y, tau) {
   # x, y population
-  nodes <- ncol(getWageRate(x))
-  N <- getSize(x)
-  wagerateA <- array(rep(t(getWageRate(x)), each = nodes), dim = c(nodes, nodes, N))
-  wagerateB <- array(rep(t(getWageRate(y)), each = nodes), dim = c(nodes, nodes, N))
+  wagerateA <- array(rep(t(getWageRate(x)), each = getNodes(x)), dim = c(getNodes(x), getNodes(x), getNumberOfClasses(x)))
+  wagerateB <- array(rep(t(getWageRate(y)), each = getNodes(y)), dim = c(getNodes(y), getNodes(y), getNumberOfClasses(y)))
   base <- sum((getProbability(y)*getArgMax(y)[ , , , 1]-getProbability(x)*getArgMax(x)[ , , , 1])*(1-tau)*wagerateA)
   scale <- sum((getProbability(y)*getArgMax(y)[ , , , 1])*(1-tau)*(wagerateB-wagerateA))
   return(list(Base = base, Scale = scale))
@@ -107,7 +95,7 @@ wageSum <- function(x, y, tau) {
 avarages <- function(x, y) {
   # x, y list(population, city)
   nodes <- getNodeCount(x$city)
-  N <- getSize(x$population)
+  N <- getNumberOfClasses(x$population)
   wagerateA <- array(rep(t(getWageRate(x$population)), each = nodes), dim = c(nodes, nodes, N))
   wagerateB <- array(rep(t(getWageRate(y$population)), each = nodes), dim = c(nodes, nodes, N))
   votMeanA <- apply(getProbability(x$population)*getVoT(x$population), c(1,2), sum)/apply(getProbability(x$population), c(1,2), sum)
@@ -133,7 +121,7 @@ avarages <- function(x, y) {
 }
 
 logitTransportModel <- function(x, mu) {
-  N <- getSize(x$population)
+  N <- getNumberOfClasses(x$population)
   nodes <- getNodeCount(x$city)
   votMean <- apply(getProbability(x$population)*getVoT(x$population), c(1,2), sum)/apply(getProbability(x$population), c(1,2), sum)
   gc <- -getCost(x$city)+votMean*getTime(x$city) # votMean is negative (as it should)
@@ -147,15 +135,14 @@ logitTransportModel <- function(x, mu) {
 
 logElasticityProductionAccessibility <- function(x, y, mu) {
   nodes <- getNodeCount(x$city)
-  N <- getSize(x$population)
-  wagerate.x <- array(rep(t(getWageRate(x$population)), each = nodes), dim = c(nodes, nodes, N))
-  wagerate.y <- array(rep(t(getWageRate(y$population)), each = nodes), dim = c(nodes, nodes, N))
+  wagerate.x <- array(rep(t(getWageRate(x$population)), each = nodes), dim = c(nodes, nodes, getNumberOfClasses(x$population)))
+  wagerate.y <- array(rep(t(getWageRate(y$population)), each = nodes), dim = c(nodes, nodes, getNumberOfClasses(y$population)))
   votMean.x <- apply(getProbability(x$population)*getVoT(x$population), c(1,2), sum)/apply(getProbability(x$population), c(1,2), sum)
   votMean.y <- apply(getProbability(y$population)*getVoT(y$population), c(1,2), sum)/apply(getProbability(y$population), c(1,2), sum)
-  Hi.x <- matrix(apply(getProbability(x$population), 1, sum), nodes, nodes)/N # Number of residents in zone i as matrix with identical rows
-  Hi.y <- matrix(apply(getProbability(y$population), 1, sum), nodes, nodes)/N # Number of residents in zone i as matrix with identical rows
-  Wk.x <- t(matrix(apply(getProbability(x$population), 2, sum), nodes, nodes))/N # Number of workers in zone k as matrix with identical cols
-  Wk.y <- t(matrix(apply(getProbability(y$population), 2, sum), nodes, nodes))/N # Number of workers in zone k as matrix with identical cols
+  Hi.x <- matrix(apply(getProbability(x$population), 1, sum), nodes, nodes)/getNumberOfClasses(x$population) # Number of residents in zone i as matrix with identical rows
+  Hi.y <- matrix(apply(getProbability(y$population), 1, sum), nodes, nodes)/getNumberOfClasses(y$population) # Number of residents in zone i as matrix with identical rows
+  Wk.x <- t(matrix(apply(getProbability(x$population), 2, sum), nodes, nodes))/getNumberOfClasses(x$population) # Number of workers in zone k as matrix with identical cols
+  Wk.y <- t(matrix(apply(getProbability(y$population), 2, sum), nodes, nodes))/getNumberOfClasses(y$population) # Number of workers in zone k as matrix with identical cols
   gc.x <- -getCost(x$city)+votMean.x*getTime(x$city)
   gc.y <- -getCost(y$city)+votMean.x*getTime(y$city) # votMean.x (before the policy)
   rowsum.x <- matrix(log(apply(Wk.x*exp(mu*gc.x), 1, sum)), nodes, nodes)
@@ -167,23 +154,32 @@ logElasticityProductionAccessibility <- function(x, y, mu) {
   return(((production.y-production.x)/production.x)/((accessibility.y-accessibility.x)/abs(accessibility.x))) # Note the absolute value of accessibility
 }
 
-fixedLandUse <- function(x, y, sigma) {
+fixedLandUseConstant <- function(x, y, sigma) {
   # x, y list(city, population)
   # sigma variance parameter
-  city <- x$city # Same land prices as Base scenario
-  setCostFactor(city) <- getCostFactor(y$city) # Same travel costs as Do-something scenario
-  setSpeed(city) <- getSpeed(y$city) # Same travel times as Do-something scenario
-  population <- x$population # Or population B? Would imply that probabilities due to travel comfort will be same as scenario B
-  rsA <- array(apply(array(rep(apply(getProbability(x$population), c(1, 3), sum), each = getNodeCount(x$city)), 
-                           c(getNodeCount(x$city), getNodeCount(x$city), getSize(x$population))), 3, t), 
-               c(getNodeCount(x$city), getNodeCount(x$city), getSize(x$population))) # Sum{j} P^0_{ij}
-  rsB <- array(apply(array(rep(apply(getProbability(y$population), c(1, 3), sum), each = getNodeCount(y$city)), 
-                           c(getNodeCount(y$city), getNodeCount(y$city), getSize(y$population))), 3, t), 
-               c(getNodeCount(y$city), getNodeCount(y$city), getSize(y$population))) # Sum{j} P^1_{ij}
+  rsA <- array(apply(array(rep(colSums(aperm(getProbability(x$population), c(2, 1, 3))), each = getNodeCount(x$city)), 
+                           c(getNodeCount(x$city), getNodeCount(x$city), getNumberOfClasses(x$population))), 3, t), 
+               c(getNodeCount(x$city), getNodeCount(x$city), getNumberOfClasses(x$population))) # Sum{j} P^0_{ij}
+  #condA <- getProbability(x$population)/rsA
+  rsB <- array(apply(array(rep(colSums(aperm(getProbability(y$population), c(2, 1, 3))), each = getNodeCount(y$city)), 
+                           c(getNodeCount(y$city), getNodeCount(y$city), getNumberOfClasses(y$population))), 3, t), 
+               c(getNodeCount(y$city), getNodeCount(y$city), getNumberOfClasses(y$population))) # Sum{j} P^1_{ij}
+  #condB <- getProbability(y$population)/rsB
   #prBrsB <- aperm(apply(getProbability(y$population), c(1, 3), function(x) x/sum(x)), c(2, 1, 3)) # P^1_{ij}/Sum_{j} P^1_{ij}
-  setProbability(population) <- getProbability(y$population)*(rsA/rsB)
-  setUtility(population) <- getUtility(y$population)+sigma*log(rsA/rsB) #sigma*
-  return(list(city = city, population = population))
+  res <- sigma*log(rsA/rsB)
+  return(res)
+}
+
+fixedLandUseConstant2 <- function(x, y, sigma) {
+  # x, y list(city, population)
+  # sigma variance parameter
+  rsA <- array(rep(apply(getProbability(x$population), 1, sum), times = getNodeCount(x$city)), dim = c(getNodeCount(x$city), getNodeCount(x$city), getNumberOfClasses(x$population))) 
+  #condA <- getProbability(x$population)/rsA
+  rsB <- array(rep(apply(getProbability(y$population), 1, sum), times = getNodeCount(y$city)), dim = c(getNodeCount(y$city), getNodeCount(y$city), getNumberOfClasses(y$population))) 
+  #condB <- getProbability(y$population)/rsB
+  #prBrsB <- aperm(apply(getProbability(y$population), c(1, 3), function(x) x/sum(x)), c(2, 1, 3)) # P^1_{ij}/Sum_{j} P^1_{ij}
+  res <- sigma*log(rsA/rsB)
+  return(res)
 }
 
 emptyDataFrame <- function(varnames, obs = 10) {
@@ -195,14 +191,15 @@ emptyDataFrame <- function(varnames, obs = 10) {
 
 cityDataFrame <- function(city, population) {
   # x simulation
-  wagerate <- array(rep(t(getWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population)))
+  wagerate <- array(rep(t(getWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population)))
+  demand <- mapply(function(i) {getProbability(population)[ , , i]*getArgMax(population)[ , , i, 4]}, 1:getNumberOfClasses(population), SIMPLIFY = "array")
   y <- data.frame(
     Node = 1:getNodeCount(city),
     Supply = getArea(city),
-    Demand = apply(getProbability(population)*getArgMax(population)[ , , , 4], 1, sum, na.rm = TRUE),
+    Demand = apply(demand, 1, sum, na.rm = TRUE),
     Price = getVertexPrice(city),
-    WorkerShare = apply(getProbability(population), 2, sum, na.rm = TRUE)/getSize(population),
-    ResidentShare = apply(getProbability(population), 1, sum, na.rm = TRUE)/getSize(population),
+    WorkerShare = apply(getProbability(population), 2, sum, na.rm = TRUE)/getNumberOfClasses(population),
+    ResidentShare = apply(getProbability(population), 1, sum, na.rm = TRUE)/getNumberOfClasses(population),
     "Residential Density" = apply(getProbability(population), 1, sum, na.rm = TRUE)/getArea(city),
     Output = apply(getProbability(population)*wagerate*getArgMax(population)[ , , , 1], 2, sum, na.rm = TRUE)
   )
@@ -250,8 +247,8 @@ populationDataFrame <- function(population, city) {
     df <- merge(x, y, by = intersect(names(x), names(y)))
     return(df)
   }
-  df.wagerate.u <- array2df(array(rep(t(getUnderlyingWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))), label.x = "Under. Wage Rate")
-  df.wagerate <- array2df(array(rep(t(getWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getSize(population))), label.x = "Wage Rate")
+  df.wagerate.u <- array2df(array(rep(t(getUnderlyingWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population))), label.x = "Under. Wage Rate")
+  df.wagerate <- array2df(array(rep(t(getWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population))), label.x = "Wage Rate")
   df.vot <- array2df(getVoT(population), label.x = "VoTT")
   df.prob <- array2df(getProbability(population), label.x = "Pr")
   df.vou <- array2df(getVoU(population), label.x = "VoU")

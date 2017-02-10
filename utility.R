@@ -3,11 +3,11 @@ indirectUtilityClosure <- function(parameter) {
   # parameter[2] = leisure beta
   # parameter[3] = land-use beta
   # parameter[4] = travel time beta
-  # paramater[5] = tau
+  # paramater[5] = tau (1-taxation rate)
   # parameter[6] = y (exogenous income)
   # parameter[7] = Time (16 or 24)
   function(p, w, c, t, op, dp) {
-    v <- log((parameter[5]*w*(parameter[7]-t)+parameter[6]-c)/((parameter[5]*w)^parameter[2]*p^parameter[3]))-parameter[4]*t+op+dp+log({parameter[1]^parameter[1]}*{parameter[2]^parameter[2]}*{parameter[3]^parameter[3]})
+    v <- log(parameter[5]*w*(parameter[7]-t)+parameter[6]-c)-log((parameter[5]*w)^parameter[2]*p^parameter[3])-parameter[4]*t+op+dp+log({parameter[1]^parameter[1]}*{parameter[2]^parameter[2]}*{parameter[3]^parameter[3]})
     return(v)
   }
 }
@@ -29,12 +29,22 @@ marginalEffectsClosure <- function(parameter) {
     # x argmax
     # note that marginal utility of income is minus marginal utility of travel cost
     dvdx <- array(c(parameter[1]/x[ , , , 2], # marginal utility of income
-                    parameter[2]/x[ , , , 3], # marginal utility of leisure time
+                    parameter[2]/x[ , , , 3], # marginal utility of time
                     -parameter[2]/x[ , , , 3]-parameter[4], # marginal utility of travel time
                     -parameter[3]/p, # marginal utility of land price
                     {(1-parameter[2])*(parameter[7]-t)*parameter[5]*w-parameter[2]*parameter[6]+parameter[2]*c}/{w*((parameter[7]-t)*parameter[5]*w+parameter[6]-c)}), # marginal utility of wage rate
                   dim = dim(x))
     return(dvdx)
+  }
+}
+
+expectedUtilityClosure <- function(parameter) {
+  function(x) {
+    # x deterministic indirect utility array
+    maxu <- apply(x, 3, max)
+    len <- length(maxu)
+    logsum <- maxu+parameter*mapply(function(i) {log(sum(exp((x[ , , i]-maxu[i])/parameter)))}, 1:len)
+    return(logsum)
   }
 }
 

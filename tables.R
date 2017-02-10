@@ -32,16 +32,16 @@ output$pathDataFrameB <- renderDataTable({
 
 # Fixed land-use
 output$simulationPopulationC <- renderDataTable({
-  if (is.null(simulationInput())) return()
-  return(format(populationDataFrame(fixedLanduseInput()$population, fixedLanduseInput()$city), digits = 2))
+  if (is.null(simulationInput()) || !input$fixedLanduse) return()
+  return(format(populationDataFrame(simulationInput()$population_fixed, simulationInput()$city_fixed), digits = 2))
 }, options = (list(lengthMenu = c(50, 200, 1000))))
 
 output$simulationCityC <- renderDataTable({
-  if (is.null(simulationInput())) return()     
-  return(format(cityDataFrame(fixedLanduseInput()$city, fixedLanduseInput()$population), digits = 2))
+  if (is.null(simulationInput()) || !input$fixedLanduse) return()     
+  return(format(cityDataFrame(simulationInput()$city_fixed, simulationInput()$population_fixed), digits = 2))
 }, options = (list(lengthMenu = c(50, 100))))
 
 output$pathDataFrameC <- renderDataTable({
-  if (is.null(simulationInput())) return()
-  return(format(pathDataFrame(fixedLanduseInput()$city), digits = 2))
+  if (is.null(simulationInput()) || !input$fixedLanduse) return()
+  return(format(pathDataFrame(simulationInput()$city_fixed), digits = 2))
 }, options = (list(lengthMenu = c(50, 100))))
