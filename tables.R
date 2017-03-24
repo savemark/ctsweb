@@ -1,47 +1,56 @@
 # Base scenario
-output$simulationPopulationA <- renderDataTable({
-  if (is.null(simulationInput())) return()
-  return(format(populationDataFrame(simulationInput()$populationA, simulationInput()$cityA), digits = 2))
+output$simulateEconomyPopulationA <- renderDataTable({
+  if (is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_base)) return(invisible(NULL))
+  return(format(getDataFrame(simulateEconomyInput(), as.numeric(input$scenario_id_base), "population"), digits = 2))
 }, options = (list(lengthMenu = c(50, 200, 1000))))
 
-output$simulationCityA <- renderDataTable({
-  if (is.null(simulationInput())) return()
-  return(format(cityDataFrame(simulationInput()$cityA, simulationInput()$populationA), digits = 2))
-}, options = (list(lengthMenu = c(50, 100))))
+output$simulateEconomyCityA <- renderDataTable({
+  if (is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_base)) return(invisible(NULL))
+  return(format(getDataFrame(simulateEconomyInput(), as.numeric(input$scenario_id_base), "city"), digits = 2))
+}, options = (list(lengthMenu = c(50, 200, 1000))))
 
-output$pathDataFrameA <- renderDataTable({
-  if (is.null(simulationInput())) return()
-  return(format(pathDataFrame(simulationInput()$cityA), digits = 2))
-}, options = (list(lengthMenu = c(50, 100))))
+output$simulateEconomyPathA <- renderDataTable({
+  if (is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_base)) return(invisible(NULL))
+  return(format(getDataFrame(simulateEconomyInput(), as.numeric(input$scenario_id_base), "path"), digits = 2))
+}, options = (list(lengthMenu = c(50, 200, 1000))))
 
 # Do-something scenario
-output$simulationPopulationB <- renderDataTable({
-  if (is.null(simulationInput())) return()
-  return(format(populationDataFrame(simulationInput()$populationB, simulationInput()$cityB), digits = 2))
+output$simulateEconomyPopulationB <- renderDataTable({
+  if (is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_alt)) return(invisible(NULL))
+  return(format(getDataFrame(simulateEconomyInput(), as.numeric(input$scenario_id_alt), "population"), digits = 2))
 }, options = (list(lengthMenu = c(50, 200, 1000))))
 
-output$simulationCityB <- renderDataTable({
-  if (is.null(simulationInput())) return()     
-  return(format(cityDataFrame(simulationInput()$cityB, simulationInput()$populationB), digits = 2))
-}, options = (list(lengthMenu = c(50, 100))))
+output$simulateEconomyCityB <- renderDataTable({
+  if (is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_alt)) return(invisible(NULL))
+  return(format(getDataFrame(simulateEconomyInput(), as.numeric(input$scenario_id_alt), "city"), digits = 2))
+}, options = (list(lengthMenu = c(50, 200, 1000))))
 
-output$pathDataFrameB <- renderDataTable({
-  if (is.null(simulationInput())) return()
-  return(format(pathDataFrame(simulationInput()$cityB), digits = 2))
-}, options = (list(lengthMenu = c(50, 100))))
+output$simulateEconomyPathB <- renderDataTable({
+  if (is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_alt)) return(invisible(NULL))
+  return(format(getDataFrame(simulateEconomyInput(), as.numeric(input$scenario_id_alt), "path"), digits = 2))
+}, options = (list(lengthMenu = c(50, 200, 1000))))
 
 # Fixed land-use
-output$simulationPopulationC <- renderDataTable({
-  if (is.null(simulationInput()) || !input$fixedLanduse) return()
-  return(format(populationDataFrame(simulationInput()$population_fixed, simulationInput()$city_fixed), digits = 2))
+output$simulateEconomyPopulationC <- renderDataTable({
+  if (is.null(simulateEconomyFixedInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_fixed)) return(invisible(NULL))
+  return(format(getDataFrame(simulateEconomyFixedInput(), as.numeric(input$scenario_id_fixed), "population"), digits = 2))
 }, options = (list(lengthMenu = c(50, 200, 1000))))
 
-output$simulationCityC <- renderDataTable({
-  if (is.null(simulationInput()) || !input$fixedLanduse) return()     
-  return(format(cityDataFrame(simulationInput()$city_fixed, simulationInput()$population_fixed), digits = 2))
-}, options = (list(lengthMenu = c(50, 100))))
+output$simulateEconomyCityC <- renderDataTable({
+  if (is.null(simulateEconomyFixedInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_fixed)) return(invisible(NULL))
+  return(format(getDataFrame(simulateEconomyFixedInput(), as.numeric(input$scenario_id_fixed), "city"), digits = 2))
+}, options = (list(lengthMenu = c(50, 200, 1000))))
 
-output$pathDataFrameC <- renderDataTable({
-  if (is.null(simulationInput()) || !input$fixedLanduse) return()
-  return(format(pathDataFrame(simulationInput()$city_fixed), digits = 2))
-}, options = (list(lengthMenu = c(50, 100))))
+output$simulateEconomyPathC <- renderDataTable({
+  if (is.null(simulateEconomyFixedInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_fixed)) return(invisible(NULL))
+  return(format(getDataFrame(simulateEconomyFixedInput(), as.numeric(input$scenario_id_fixed), "path"), digits = 2))
+}, options = (list(lengthMenu = c(50, 200, 1000))))

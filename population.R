@@ -276,6 +276,7 @@ setMethod("initialize",
           function(.Object, x, y, lowerbound = 150000, upperbound = 10^6, meanlog = log(336000), sdlog = log(100), days = 228, hours = 8, omean = 0, osd = 0.25, dmean = 0, dsd = 0.25, ...) {
             setNumberOfClasses(.Object) <- x
             setNodes(.Object) <- y
+            setSizeOfEachClass(.Object) <- rep(1, times = x) # Not implemented yet
             setWageRate(.Object) <- matrix(rtruncated_log_normal(y*x, a = lowerbound, b = upperbound, meanlog, sdlog)/{hours*days}, x, y)
             setUnderlyingWageRate(.Object) <- getWageRate(.Object)
             setOriginPreference(.Object) <- matrix(rnorm(x*y, mean = omean, sd = osd), x, y)

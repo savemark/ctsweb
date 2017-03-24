@@ -1,171 +1,126 @@
 column(8,
        fluidRow(
          column(6,
-                h5("Base scenario", align = "center"),
                 tabsetPanel(
                   tabPanel("City",
                            wellPanel(
-                             renderInputs("a")
+                             fluidRow(
+                               column(12,
+                                      plotOutput("cityPlot")
+                               )
+                             ),
+                             hr(),
+                             fluidRow(
+                               column(6,                     
+                                      radioButtons("type", "City type:",
+                                                   c("Default" = "default",
+                                                     "Random" = "random",
+                                                     "Grid" = "grid"),
+                                                   selected = "grid",
+                                                   inline = TRUE)
+                               ),
+                               column(6,                     
+                                      radioButtons("mode", "Network mode:",
+                                                   c("Undirected" = "undirected",
+                                                     "Directed" = "directed"),
+                                                   selected = "undirected",
+                                                   inline = TRUE)
+                               )
+                             ),
+                             fluidRow(
+                               conditionalPanel(
+                                 condition = "input.type == 'default'",
+                                 column(4,
+                                        numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
+                                 )
+                               ),
+                               conditionalPanel(
+                                 condition = "input.type == 'random'",
+                                 column(4,
+                                        numericInput("nodes", label = "Nodes", value = 30, min = 10, max = 60, step = 1)
+                                 ),
+                                 column(4,
+                                        numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
+                                 )
+                               ),
+                               conditionalPanel(
+                                 condition = "input.type == 'grid'",
+                                 column(4,
+                                        numericInput("sqrtnodes", label = "\\(\\sqrt(\\text{nodes})\\)", value = 2, min = 2, max = 10, step = 1)
+                                 ),
+                                 column(4,
+                                        numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
+                                 )
+                               )
+                             ),
+                             fluidRow(
+                               column(12,
+                                      p("Nodes are coloured red. Directed edges with high values (low values) of weighted betweenness centrality are coloured light blue (dark gray). Borders of zones are coloured black.")
+                               )
+                             )
                            )
-                  ),
-                  tabPanel("Population",
+                  )
+                ),
+                tabsetPanel(
+                  tabPanel("Scenarios",
                            wellPanel(
-                             tags$style(type = "text/css", "#populationShow {background-color: rgba(255,255,255,1);}"),
-                             verbatimTextOutput("populationShow")
+                             p("Base scenario"),
+                             renderInputs("a"),
+                             p("Alternative scenario(s)"),
+                             radioButtons("scenario", "Scenario type:",
+                                          c("Multiple links, one alternative scenario" = "default",
+                                            "Single link, permutations, several alternative scenarios" = "permutation"),
+                                          inline = TRUE),
+                             uiOutput("scenarioInput"),
+                             renderInputs("b"),
+                             fluidRow(
+                               column(12,
+                                      radioButtons("landUseOption", "Land use option",
+                                                   c("Non-fixed" = "nonfixed",
+                                                     "Fixed" = "fixed",
+                                                     "Both" = "both"),
+                                                   inline = TRUE)
+                               )
+                             ),
+                             hr(),
+                             fluidRow(
+                               column(4,
+                                      numericInput("guess", "Land price guess", value = 100, min = 1)
+                               ),
+                               column(8,
+                                      p("Land price guess for all scenarios.")
+                               )
+                             ),
+                             fluidRow(
+                               column(12,
+                                      p("Note that running the simulation usually takes 1-2 minutes. 
+                                        Run time depends mostly on population size, the number of origins/destinations and if there is a spillover 
+                                        effect in the economy. Also note that when the simulation has finished, some of the plots and tables might take some time to load because of the 
+                                        large number of entries.")
+                                      )
+                                      ),
+                             fluidRow(
+                               column(4,
+                                      actionButton("run_economy", "Run/Re-run", icon("refresh")),
+                                      offset = 4
+                               )
+                             )
                            )
                   )
                 )
          ),
          column(6,
-                h5("Do-something scenario", align = "center"),
                 tabsetPanel(
-                  tabPanel("City",
+                  tabPanel("Economy",
                            wellPanel(
-                             renderInputs("b")
-                           )
-                  )
-                )
-         )
-       ),
-       wellPanel(
-         fluidRow(
-           
-           column(2,
-                  numericInput("guess", "Land price guess", value = 100, min = 1)
-           ),
-           column(10,
-                  p("Land price guess for the Base scenario. The solution will be used as a guess for the Do-something scenario.")
-           )
-         ),
-         fluidRow(
-           column(2,
-                  actionButton("run", "Run/Re-run", icon("refresh"), width = "90%")
-           ),
-           column(10,
-                  p("Note that running the simulation usually takes 1-2 minutes. 
-                    Run time depends mostly on population size, the number of origins/destinations and if there is a spillover 
-                    effect in the economy. Also note that when the simulation has finished, some of the tables might take some time to load because of the 
-                    large number of entries.")
-           )
-         )
-       ),
-       fluidRow(
-         column(12, 
-                tabsetPanel(
-                  tabPanel("Summary",
-                           wellPanel(
-                             tags$style(type='text/css', '#summary {background-color: rgba(255,255,255,1);}'),
-                             fluidRow(
-                               column(2,
-                                      checkboxInput("showConvergenceMessage", "Show convergence message", value = TRUE)
-                               ),
-                               column(2,
-                                      checkboxInput("fixedLanduse", "Show fixed land-use analysis", value = FALSE)
-                               )
-                             ),
-                             verbatimTextOutput("summary")
-                           )
-                  ),     
-                  tabPanel("Plots",
-                           tabsetPanel(
-                             tabPanel("Demand plots",
-                                      column(6,
-                                             plotOutput("wageratedensity"),
-                                             plotOutput("x2density"),
-                                             plotOutput("x4density"),
-                                             plotOutput("vktdensity"),
-                                             plotOutput("opdensity")
-                                      ),
-                                      column(6,
-                                             plotOutput("x1density"),
-                                             plotOutput("x3density"),
-                                             plotOutput("x5density"),
-                                             plotOutput("incomedensity"),
-                                             plotOutput("dpdensity")
-                                      )
-                             ),
-                             tabPanel("Equity plots",
-                                      fluidRow(
-                                        column(12,
-                                               plotOutput("equity")
-                                        )
-                                      ),
-                                      hr(),
-                                      fluidRow(
-                                        column(3,
-                                               numericInput("probs", "Number of income classes", value = 3, min = 1, max = 10, step = 1)
-                                        )
-                                      )
-                             ),
-                             tabPanel("3D Plots",
-                                      column(4,
-                                             plotOutput("price3dA", width = "100%", height = "600px"),
-                                             plotOutput("residency3dA", width = "100%", height = "600px"),
-                                             plotOutput("work3dA", width = "100%", height = "600px")
-                                      ),
-                                      column(4,
-                                             plotOutput("price3dB", width = "100%", height = "600px"),
-                                             plotOutput("residency3dB", width = "100%", height = "600px"),
-                                             plotOutput("work3dB", width = "100%", height = "600px")
-                                      ),
-                                      column(4,
-                                             plotOutput("price3d_fixed", width = "100%", height = "600px"),
-                                             plotOutput("residency3d_fixed", width = "100%", height = "600px"),
-                                             plotOutput("work3d_fixed", width = "100%", height = "600px")
-                                             )
-                             )
+                             tags$style(type = "text/css", "#economyShow {background-color: rgba(255,255,255,1);}"),
+                             verbatimTextOutput("economyShow")
                            )
                   ),
-                  tabPanel("Tables",
-                           tabsetPanel(
-                             tabPanel("Base scenario",
-                                      tabsetPanel(
-                                        tabPanel("City",
-                                                 dataTableOutput("simulationCityA")
-                                        ),
-                                        tabPanel("Paths",
-                                                 br(),
-                                                 p("Note that Total cost (time) is the sum of link costs (times) and within-zone costs (times)."),
-                                                 br(),
-                                                 dataTableOutput("pathDataFrameA")
-                                        ),
-                                        tabPanel("Population",
-                                                 dataTableOutput("simulationPopulationA")
-                                        )
-                                      )
-                             ),
-                             tabPanel("Do-something scenario",
-                                      tabsetPanel(
-                                        tabPanel("City",
-                                                 dataTableOutput("simulationCityB")
-                                        ),
-                                        tabPanel("Paths",
-                                                 br(),
-                                                 p("Note that Total cost (time) is the sum of link costs (times) and within-zone costs (times)."),
-                                                 br(),
-                                                 dataTableOutput("pathDataFrameB")
-                                        ),
-                                        tabPanel("Population",
-                                                 dataTableOutput("simulationPopulationB")
-                                        )
-                                      )
-                             ),
-                             tabPanel("Fixed land-use", 
-                                      tabsetPanel(
-                                        tabPanel("City",
-                                                 dataTableOutput("simulationCityC")
-                                        ),
-                                        tabPanel("Paths",
-                                                 br(),
-                                                 p("Note that Total cost (time) is the sum of link costs (times) and within-zone costs (times)."),
-                                                 br(),
-                                                 dataTableOutput("pathDataFrameC")
-                                        ),
-                                        tabPanel("Population",
-                                                 dataTableOutput("simulationPopulationC")
-                                        )
-                                      )
-                             )
+                  tabPanel("Weights",
+                           wellPanel(
+                             tags$style(type = "text/css", "#weightsShow {background-color: rgba(255,255,255,1);}"),
+                             verbatimTextOutput("weightsShow")
                            )
                   )
                 )

@@ -5,7 +5,7 @@ city <- setClass("City",
                  slots = c(coordinate = "matrix",
                            adjacency = "matrix",
                            network = "igraph",
-                           cells = "deldir", # voronoi cells
+                           cells = "deldir", # Voronoi cells
                            distance = "matrix", # Distance matrix
                            edgepath = "matrix", # Edge-path matrix
                            time = "matrix", # Travel time matrix
@@ -132,6 +132,14 @@ setMethod("getEdgeSpeed",
           }
 )
 
+setGeneric("getEdgeLength", function(object, index = E(object@network)) {standardGeneric("getEdgeLength")})
+setMethod("getEdgeLength",
+          signature = "City",
+          definition = function(object, index = E(object@network)) {
+            return(edge_attr(object@network, "length", index))
+          }
+)
+
 setGeneric("getDistance", function(object) {standardGeneric("getDistance")})
 setMethod("getDistance",
           signature = "City",
@@ -207,7 +215,7 @@ setMethod("setEdgeCostFactor",
             # diagonal.col <- object@costfactor*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
             # diag(diagonal.col) <- 0
             # Total cost
-            object@cost <- distances(object@network, weights = E(object@network)$cost) #+diagonal.col+diagonal.row
+            object@cost <- distances(object@network, mode = "out", weights = E(object@network)$cost) #+diagonal.col+diagonal.row
             return(object)
           }
 )
@@ -223,7 +231,7 @@ setReplaceMethod("setEdgeCostFactor",
                    # diagonal.col <- object@costfactor*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
                    # diag(diagonal.col) <- 0
                    # Total cost
-                   object@cost <- distances(object@network, weights = E(object@network)$cost) #+diagonal.col+diagonal.row
+                   object@cost <- distances(object@network, mode = "out", weights = E(object@network)$cost) #+diagonal.col+diagonal.row
                    return(object)
                  }
 )
@@ -239,7 +247,7 @@ setMethod("setEdgeSpeed",
             # diagonal.col <- (1/object@speed)*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
             # diag(diagonal.col) <- 0            
             # Total time
-            object@time <- distances(object@network, weights = E(object@network)$time) #+diagonal.col+diagonal.row
+            object@time <- distances(object@network, mode = "out", weights = E(object@network)$time) #+diagonal.col+diagonal.row
             return(object)
           }
 )
@@ -255,7 +263,7 @@ setReplaceMethod("setEdgeSpeed",
                    # diagonal.col <- (1/object@speed)*matrix(diag(object@distance), nrow = nrow(object@distance), ncol = ncol(object@distance), byrow = TRUE) # Destination zone
                    # diag(diagonal.col) <- 0            
                    # Total time
-                   object@time <- distances(object@network, weights = E(object@network)$time) #+diagonal.col+diagonal.row
+                   object@time <- distances(object@network, mode = "out", weights = E(object@network)$time) #+diagonal.col+diagonal.row
                    return(object)
                  }
 )
@@ -295,10 +303,11 @@ as.path.id <- function(x, from, to) {
 
 setMethod("initialize",
           signature = "City",
-          function(.Object, x, y, speed = 1, costfactor = 1) {
+          function(.Object, x, y, speed = 1, costfactor = 1, mode = "directed") {
             .Object@coordinate <- x
             .Object@adjacency <- y
-            .Object@network <- graph_from_adjacency_matrix(y, mode = "directed")
+            edge.length <- y*rdist(x) # link lengths
+            .Object@network <- graph_from_adjacency_matrix(edge.length, mode = mode, weighted = TRUE)
             tri <- deldir(x[ , 1], x[ , 2], dpl = list(ndx = 2, ndy = 2))
             V(.Object@network)$area <- tri$summary$dir.area[1:length(x[ , 1])]
             .Object@cells <- tri
@@ -307,10 +316,8 @@ setMethod("initialize",
             #V(.Object@network)$size <- deg
             V(.Object@network)$x <- x[ , 1] # Node coordinates
             V(.Object@network)$y <- x[ , 2] # Node coordinates
-            edge.length <- y*rdist(x) # link length, speed, time, cost
-            edge.length <- t(edge.length)[t(edge.length)>0]
-            E(.Object@network)$length <- edge.length
-            .Object@distance <- distances(.Object@network, weights = E(.Object@network)$length)
+            E(.Object@network)$length <- E(.Object@network)$weight
+            .Object@distance <- distances(.Object@network, mode = "out", weights = E(.Object@network)$length)
             # Set the distance within a zone to half the distance to nearest zone
             #diag(.Object@distance) <- NA
             #diagonal <- apply(.Object@distance, 2, min, na.rm = TRUE)
@@ -321,8 +328,8 @@ setMethod("initialize",
             .Object <- setEdgeSpeed(.Object, value = speed)
             .Object <- setEdgeCostFactor(.Object, value = costfactor)
             # Vertex betweenness centrality (could use GC as weight?)
-            V(.Object@network)$betweenness <- betweenness(.Object@network, V(.Object@network), weights = E(.Object@network)$length)
-            E(.Object@network)$betweenness <- edge_betweenness(.Object@network, E(.Object@network), weights = E(.Object@network)$length)
+            V(.Object@network)$betweenness <- betweenness(.Object@network, V(.Object@network), weights = NULL)
+            E(.Object@network)$betweenness <- edge_betweenness(.Object@network, E(.Object@network), weights = NULL)
             validObject(.Object)
             return(.Object)            
           }
@@ -352,9 +359,9 @@ setMethod("show",
             cat(" ", "\n",
                 "PATHS", "\n",
                 "Number of paths: ", dim(getEdgePath(object))[2], "\n",
-                "Longest distance (shortest path) between an OD-pair: ", max(distances(object@network, weights = E(object@network)$length)), "\n",
-                "Largest travel time (shortest path) between an OD-pair: ", max(distances(object@network, weights = E(object@network)$time)), "\n",
-                "Largest travel cost (shortest path) between an OD-pair: ", max(distances(object@network, weights = E(object@network)$cost)), "\n")
+                "Longest distance (shortest path) between an OD-pair: ", max(distances(object@network, mode = "out", weights = E(object@network)$length)), "\n",
+                "Largest travel time (shortest path) between an OD-pair: ", max(distances(object@network, mode = "out", weights = E(object@network)$time)), "\n",
+                "Largest travel cost (shortest path) between an OD-pair: ", max(distances(object@network, mode = "out", weights = E(object@network)$cost)), "\n")
             cat(" ", "\n",
                 "SPEEDS and COSTS on links", "\n",
                 "Speed (max): ", max(getEdgeSpeed(object)), "\n",
@@ -379,14 +386,14 @@ setMethod("plot",
             neb <- (eb-min(eb))/(max(eb)-min(eb)) # Normalized edge betweenness
             E(x@network)$edge.color <- palf(8)[as.numeric(cut(eb, breaks = 8))]
             # Labels
-            edge.labels <- FALSE
-            if (edge.labels) {
-              edge.label <- paste(round(E(x@network)$length, 2))#, "\n", 
-              #round(E(x@network)$cost, 2), "\n", 
-              #round(E(x@network)$time, 2))
-            } else {
-              edge.label <- NA
-            }
+            # edge.labels <- FALSE
+            # if (edge.labels) {
+            #   edge.label <- paste(round(E(x@network)$length, 2))#, "\n", 
+            #   #round(E(x@network)$cost, 2), "\n", 
+            #   #round(E(x@network)$time, 2))
+            # } else {
+            #   edge.label <- NA
+            # }
             # Plots
             xlim <- c(min(x@coordinate[ , 1]), max(x@coordinate[ , 1]))
             ylim <- c(min(x@coordinate[ , 2]), max(x@coordinate[ , 2]))
@@ -405,8 +412,8 @@ setMethod("plot",
                  edge.color = E(x@network)$edge.color,
                  edge.arrow.size = 0.4,
                  edge.curved = 0.1,
-                 edge.label = edge.label,
-                 edge.label.cex = 0.7,
+                 edge.label = as_ids(E(x@network)),
+                 edge.label.cex = 0.8,
                  edge.label.color = "black")
             plot(x@cells, 
                  wlines = "tess",
@@ -507,8 +514,8 @@ setMethod("plot",
 
 city.random <- function(x, ...) {
   A <- matrix(0, nrow(x), nrow(x))
-  tri <- tri.mesh(x[, 1], x[, 2])
-  for(i in 1:nrow(x)) {A[i, tripack::neighbours(tri)[[i]]] <- 1}
+  tri <- deldir(x = x[ , 1], y = x[ , 2])
+  for (i in 1:length(tri$delsgs$ind1)) {A[tri$delsgs$ind1[i], tri$delsgs$ind2[i]] <- 1; A[tri$delsgs$ind2[i], tri$delsgs$ind1[i]] <- 1}
   return(new(Class = "City", x = x, y = A, ...))
 }
 

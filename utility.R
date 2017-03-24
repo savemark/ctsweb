@@ -7,13 +7,18 @@ indirectUtilityClosure <- function(parameter) {
   # parameter[6] = y (exogenous income)
   # parameter[7] = Time (16 or 24)
   function(p, w, c, t, op, dp) {
+    c <- c+mapply(function(i) {t(c[ , , i])}, 1:dim(c)[3], SIMPLIFY = "array")
+    t <- t+mapply(function(i) {t(t[ , , i])}, 1:dim(t)[3], SIMPLIFY = "array")
     v <- log(parameter[5]*w*(parameter[7]-t)+parameter[6]-c)-log((parameter[5]*w)^parameter[2]*p^parameter[3])-parameter[4]*t+op+dp+log({parameter[1]^parameter[1]}*{parameter[2]^parameter[2]}*{parameter[3]^parameter[3]})
+    #warn <<- tryCatch(log(parameter[5]*w*(parameter[7]-t)+parameter[6]-c), warning = function(w) {which(is.nan(log(parameter[5]*w*(parameter[7]-t)+parameter[6]-c)))})
     return(v)
   }
 }
 
 argmaxUtilityClosure <- function(parameter) {
   function(p, w, c, t) {
+    c <- c+mapply(function(i) {t(c[ , , i])}, 1:dim(c)[3], SIMPLIFY = "array")
+    t <- t+mapply(function(i) {t(t[ , , i])}, 1:dim(t)[3], SIMPLIFY = "array")
     x <- array(c(parameter[7]-t-{parameter[2]/{parameter[5]*w}}*{parameter[5]*w*(parameter[7]-t)+parameter[6]-c}, # Optimal working hours
                  parameter[1]*{parameter[5]*w*{parameter[7]-t}+parameter[6]-c}, # Optimal consumption
                  {parameter[2]/{parameter[5]*w}}*{parameter[5]*w*{parameter[7]-t}+parameter[6]-c}, # Optimal leisure
@@ -28,6 +33,8 @@ marginalEffectsClosure <- function(parameter) {
   function(x, p, w, c, t) {
     # x argmax
     # note that marginal utility of income is minus marginal utility of travel cost
+    c <- c+mapply(function(i) {t(c[ , , i])}, 1:dim(c)[3], SIMPLIFY = "array")
+    t <- t+mapply(function(i) {t(t[ , , i])}, 1:dim(t)[3], SIMPLIFY = "array")
     dvdx <- array(c(parameter[1]/x[ , , , 2], # marginal utility of income
                     parameter[2]/x[ , , , 3], # marginal utility of time
                     -parameter[2]/x[ , , , 3]-parameter[4], # marginal utility of travel time
@@ -35,16 +42,6 @@ marginalEffectsClosure <- function(parameter) {
                     {(1-parameter[2])*(parameter[7]-t)*parameter[5]*w-parameter[2]*parameter[6]+parameter[2]*c}/{w*((parameter[7]-t)*parameter[5]*w+parameter[6]-c)}), # marginal utility of wage rate
                   dim = dim(x))
     return(dvdx)
-  }
-}
-
-expectedUtilityClosure <- function(parameter) {
-  function(x) {
-    # x deterministic indirect utility array
-    maxu <- apply(x, 3, max)
-    len <- length(maxu)
-    logsum <- maxu+parameter*mapply(function(i) {log(sum(exp((x[ , , i]-maxu[i])/parameter)))}, 1:len)
-    return(logsum)
   }
 }
 

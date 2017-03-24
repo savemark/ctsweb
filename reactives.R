@@ -1,22 +1,10 @@
 # Reactive expressions
 cityInput <- reactive({
-  if (input$type == "default") x <- city(input$scale*xy, adjacency)
-  if (input$type == "random") x <- city.random(input$scale*matrix(c(runif(input$nodes), runif(input$nodes)), input$nodes, 2))
-  if (input$type == "grid") x <- city.grid(input$sqrtnodes, scale = input$scale)
-  return(x)
-})
-
-cityInputA <- reactive({ # Cities for simulations A and B
-  x <- cityInput()
+  if (input$type == "default") x <- city(input$scale*xy, adjacency, mode = input$mode)
+  if (input$type == "random") x <- city.random(input$scale*matrix(c(runif(input$nodes), runif(input$nodes)), input$nodes, 2), mode = input$mode)
+  if (input$type == "grid") x <- city.grid(input$sqrtnodes, scale = input$scale, mode = input$mode)
   x <- setEdgeSpeed(x, value = input$a_speed)  
   x <- setEdgeCostFactor(x, value = input$a_travel_cost)
-  return(x)
-})
-
-cityInputB <- reactive({
-  x <- cityInput()
-  x <- setEdgeSpeed(x, value = input$b_speed)
-  x <- setEdgeCostFactor(x, value = input$b_travel_cost)
   return(x)
 })
 
@@ -36,9 +24,92 @@ populationInput <- reactive({ # Population
   return(x)
 })
 
-parameters <- reactiveValues()
+output$scenarioInput <- renderUI({
+  if (input$scenario == "default") {
+    selectInput("linkids", "Link ids", 1:getEdgeCount(cityInput()), selected = 1:getEdgeCount(cityInput()), multiple = TRUE,
+                selectize = TRUE, width = NULL, size = NULL)
+  } else if (input$scenario == "permutation") {
+    selectInput("linkids", "Link ids", 1:getEdgeCount(cityInput()), selected = NULL, multiple = TRUE,
+                selectize = TRUE, width = NULL, size = NULL)
+  }
+})
 
-observeEvent(input$run, {
+networkWeightsInput <- reactive({
+  base_speed <- matrix(input$a_speed, 1, getEdgeCount(cityInput()))
+  base_costfactor <- matrix(input$a_travel_cost, 1, getEdgeCount(cityInput()))
+  if (input$scenario == "default") {
+    alternative_speed <- matrix(input$a_speed, 1, getEdgeCount(cityInput()))
+    alternative_costfactor <- matrix(input$a_travel_cost, 1, getEdgeCount(cityInput()))
+    ids <- as.numeric(input$linkids)
+    alternative_speed[1, ids] <- input$b_speed
+    alternative_costfactor[1, ids] <- input$b_travel_cost
+  } else if (input$scenario == "permutation") {
+    alternative_speed <- matrix(input$a_speed, length(input$linkids), getEdgeCount(cityInput()))
+    alternative_costfactor <- matrix(input$a_travel_cost, length(input$linkids), getEdgeCount(cityInput()))
+    ids <- as.numeric(input$linkids)
+    for (i in seq_along(ids)) {
+      alternative_speed[i, ids[i]] <- input$b_speed
+      alternative_costfactor[i, ids[i]] <- input$b_travel_cost
+    }
+  }
+  speeds <- rbind(base_speed, alternative_speed)
+  costfactors <- rbind(base_costfactor, alternative_costfactor)
+  x <- abind(speeds, costfactors, along = 3)
+  return(x)
+})
+
+observeEvent(input$run_economy, {
+  output$scenario_ID_base <- renderUI({ # This could perhaps be turned into a module instead
+    radioButtons("scenario_id_base", "Scenario ID", 1, inline = TRUE)
+  })
+}, ignoreInit = TRUE)
+
+observeEvent(input$run_economy, {
+  output$scenario_ID_alt <- renderUI({
+    if (nrow(networkWeightsInput()) == 1) return(radioButtons("scenario_id_alt", "Scenario ID", 1, inline = TRUE))
+    radioButtons("scenario_id_alt", "Scenario ID", 2:nrow(networkWeightsInput()), inline = TRUE)
+  })
+}, ignoreInit = TRUE)
+
+observeEvent(input$run_economy, {
+  output$scenario_ID_fixed <- renderUI({
+    if (nrow(networkWeightsInput()) == 1) return(radioButtons("scenario_id_fixed", "Scenario ID", 1, inline = TRUE))
+    radioButtons("scenario_id_fixed", "Scenario ID", 2:nrow(networkWeightsInput()), inline = TRUE)
+  })
+}, ignoreInit = TRUE)
+
+observeEvent(input$run_economy, {
+  output$scenario_ID_base_plot <- renderUI({
+    radioButtons("scenario_id_base_plot", "Scenario ID", 1, inline = TRUE)
+  })
+}, ignoreInit = TRUE)
+
+observeEvent(input$run_economy, {
+  output$scenario_ID_alt_plot <- renderUI({
+    if (nrow(networkWeightsInput()) == 1) return(radioButtons("scenario_id_alt_plot", "Scenario ID", 1, inline = TRUE))
+    radioButtons("scenario_id_alt_plot", "Scenario ID", 2:nrow(networkWeightsInput()), inline = TRUE)
+  })
+}, ignoreInit = TRUE)
+
+observeEvent(input$run_economy, {
+  output$scenario_ID_fixed_plot <- renderUI({
+    if (nrow(networkWeightsInput()) == 1) return(radioButtons("scenario_id_fixed_plot", "Scenario ID", 1, inline = TRUE))
+    radioButtons("scenario_id_fixed_plot", "Scenario ID", 2:nrow(networkWeightsInput()), inline = TRUE)
+  })
+}, ignoreInit = TRUE)
+
+economyInput <- reactive({
+  x <- economy(cityInput(), 
+               populationInput(), 
+               networkWeightsInput(),
+               utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$a_beta5, (1-input$tau), input$y, input$TIME)),
+               probability = probabilityClosure(input$delta),
+               spillover = spilloverClosure(input$spillover.eps, getArea(cityInput())))
+  return(x)
+})
+
+parameters <- reactiveValues()
+observeEvent(input$run_economy, {
   parameters$tau <- input$tau
   parameters$a_speed <- input$a_speed
   parameters$b_speed <- input$b_speed
@@ -47,41 +118,17 @@ observeEvent(input$run, {
   parameters$a_beta5 <- input$a_beta5
   parameters$b_beta5 <- input$b_beta5
   parameters$delta <- input$delta
-  parameters$sigma <- input$sigma
   parameters$type <- input$type
 })
 
-simulationInput <- eventReactive(input$run, { # Simulation
-  simA <- simulation(guess = rep(input$guess, getNodeCount(cityInputA())), 
-                     city = cityInputA(),
-                     population = populationInput(),
-                     utility = utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$a_beta5, 1-input$tau, input$y, input$TIME)),
-                     probability = probabilityClosure(input$delta),
-                     spillover = spilloverClosure(input$spillover.eps, getArea(cityInputA())))
-  simB <- simulation(guess = rep(input$guess, getNodeCount(cityInputB())), 
-                     city = cityInputB(),
-                     population = populationInput(),
-                     utility = utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$b_beta5, 1-input$tau, input$y, input$TIME)),
-                     probability = probabilityClosure(input$delta),
-                     spillover = spilloverClosure(input$spillover.eps, getArea(cityInputB())))
-  scale <- array(apply(array(rep(colSums(aperm(getProbability(simA$population), c(2, 1, 3))), each = getNodeCount(simA$city)), 
-                             c(getNodeCount(simA$city), getNodeCount(simA$city), getNumberOfClasses(simA$population))), 3, t), 
-                 c(getNodeCount(simA$city), getNodeCount(simA$city), getNumberOfClasses(simA$population)))
-  sim_fixed <- simulation(guess = rep(input$guess, getNodeCount(cityInputB())), 
-                          city = cityInputB(),
-                          population = populationInput(),
-                          utility = utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$b_beta5, 1-input$tau, input$y, input$TIME)),
-                          probability = probabilityClosure(input$delta),
-                          spillover = spilloverClosure(input$spillover.eps, getArea(cityInputB())),
-                          scale = scale)
-  x <- list(solutionA = simA$solution, 
-            solutionB = simB$solution,
-            solution_fixed = sim_fixed$solution,
-            populationA = simA$population, 
-            populationB = simB$population,
-            population_fixed = sim_fixed$population,
-            cityA = simA$city,
-            cityB = simB$city,
-            city_fixed = sim_fixed$city)
+simulateEconomyInput <- eventReactive(input$run_economy, { # Simulation
+  if (input$landUseOption == "nonfixed" || input$landUseOption == "both") {x <- simulate(economyInput(), input$guess)}
+  else {return()}
+  return(x)
+})
+
+simulateEconomyFixedInput <- eventReactive(input$run_economy, { # Simulation
+  if (input$landUseOption == "fixed" || input$landUseOption == "both") {x <- simulate(economyInput(), input$guess, fixed.landuse = TRUE)}
+  else {return()}
   return(x)
 })

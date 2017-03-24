@@ -9,7 +9,7 @@ systemOfEquationsClosure <- function(type = c("nonfixed", "fixed")) {
     pr <- probability$density(v) # choice probabilities
     ld <- utility$argmaxUtility(p, w, c, t)[ , , , 4] # land demand
     diff <- c(apply(pr*ld, 1, sum, na.rm = TRUE)-area, # excess demand
-              spillover$f(pr)*wagerate0-pw[-(1:dim(c)[1])]) # wage rate fixed point
+              spillover$f(pr)*wagerate0-pw[-(1:nrow(c))]) # wage rate fixed point
     return(diff)
   }
   systemOfEquations_fixed <- function(pw, c, t, op, dp, utility, wagerate0, area, probability, spillover, scale) {
@@ -22,7 +22,7 @@ systemOfEquationsClosure <- function(type = c("nonfixed", "fixed")) {
     pr <- pr*{scale/prj} # rescaled probabilities for fixed land-use
     ld <- utility$argmaxUtility(p, w, c, t)[ , , , 4] # land demand
     diff <- c(apply(pr*ld, 1, sum, na.rm = TRUE)-area, # excess demand
-              spillover$f(pr)*wagerate0-pw[-(1:dim(c)[1])]) # wage rate fixed point
+              spillover$f(pr)*wagerate0-pw[-(1:nrow(c))]) # wage rate fixed point
     return(diff)
   }
   switch(type,
@@ -33,7 +33,6 @@ systemOfEquationsClosure <- function(type = c("nonfixed", "fixed")) {
 simulation <- function(guess, city, population, utility, probability, spillover, scale = NULL) {
   if (!all(guess > 0)) # guess = land price guess vector
     stop("The land price guess needs to be larger than 0.")
-  setUnderlyingWageRate(population) <- getWageRate(population)
   wagerate0 <- as.vector(getWageRate(population)) # row vector
   c <- array(getCost(city), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population))) # travel cost 
   t <- array(getTime(city), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population))) # travel time 
@@ -43,11 +42,13 @@ simulation <- function(guess, city, population, utility, probability, spillover,
   if (is.null(scale)) {
     sol <- BBsolve(par = c(guess, wagerate0), 
                    fn = systemOfEquationsClosure("nonfixed"), 
-                   control = list(trace = FALSE, NM = TRUE), 
+                   control = list(trace = FALSE, NM = FALSE), 
                    quiet = TRUE,
                    c = c, t = t, op = op, dp = dp, 
-                   utility = utility, wagerate0 = wagerate0, 
-                   area = getArea(city), probability = probability, 
+                   utility = utility, 
+                   wagerate0 = wagerate0, 
+                   area = getArea(city), 
+                   probability = probability, 
                    spillover = spillover) 
   } else {
     sol <- BBsolve(par = c(guess, wagerate0), 

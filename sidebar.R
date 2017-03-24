@@ -1,5 +1,4 @@
 column(4,
-       h5("Parameters", align = "center"),
        tabsetPanel(
          tabPanel("Global",
                   wellPanel(
@@ -7,7 +6,7 @@ column(4,
                       column(6, 
                              numericInput("n", label = "Number of classes \\(N\\)", min = 25, max = 100, value = 250, step = 1),
                              numericInput("delta", label = "Scale parameter \\(\\delta>0\\) for the error terms", value = 0.01, step = 0.001),
-                             numericInput("y", label = "Exogenous income \\(y\\) per day", min = 0, max = 500, value = 0, step = 10)
+                             numericInput("y", label = "Exogenous income \\(y\\) per day", min = 0, value = 100, step = 10)
                       ),
                       column(6,
                              numericInput("tau", label = "Taxation rate \\(\\tau\\)", min = 0, max = 0.5, value = 0.30, step = 0.01),
@@ -46,77 +45,8 @@ column(4,
                       )
                     )
                   )
-         ),
-         tabPanel("Logit Transport Model",
-                  wellPanel(
-                    fluidRow(
-                      column(4,
-                             numericInput("sigma", label = "Calibration parameter \\(\\sigma\\)", min = 0.001, max = 0.010, value = 0.002, step = 0.001)
-                      )
-                    ),
-                    fluidRow(
-                      column(12,
-                             p("The parameter \\(\\sigma\\) is used when calcluating the elasticity of total output (pre-tax) with respect to accessibility. 
-                               It needs to be set so that the logit transport model (in the summary) is consistent with avg. travel time in the city.")
-                      )
-                    )
-                  )
          )
        ),
-       h5("City", align = "center"),
-       tabsetPanel(
-         tabPanel("Plot",
-                  wellPanel(
-                    fluidRow(
-                      column(12,
-                             plotOutput("cityPlot")
-                      )
-                    ),
-                    hr(),
-                    fluidRow(
-                      column(12,                     
-                             radioButtons("type", "City type:",
-                                          c("Default" = "default",
-                                            "Random" = "random",
-                                            "Grid" = "grid"),
-                                          inline = TRUE)
-                      )
-                    ),
-                    fluidRow(
-                      conditionalPanel(
-                        condition = "input.type == 'default'",
-                        column(4,
-                               numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
-                        )
-                      ),
-                      conditionalPanel(
-                        condition = "input.type == 'random'",
-                        column(4,
-                               numericInput("nodes", label = "Nodes", value = 30, min = 10, max = 60, step = 1)
-                        ),
-                        column(4,
-                               numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
-                        )
-                      ),
-                      conditionalPanel(
-                        condition = "input.type == 'grid'",
-                        column(4,
-                               numericInput("sqrtnodes", label = "\\(\\sqrt(\\text{nodes})\\)", value = 2, min = 2, max = 10, step = 1)
-                        ),
-                        column(4,
-                               numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
-                        )
-                      )
-                    ),
-                    fluidRow(
-                      column(12,
-                             p("Nodes are coloured red. Directed edges with high values (low values) of weighted betweenness centrality are coloured light blue (dark gray). Borders of zones are coloured black.")
-                      )
-                    )
-                  )
-         )
-       ),
-       h5("Distributions", align = "center"),
        tabsetPanel(
          tabPanel("Wage rates",
                   wellPanel(
@@ -183,5 +113,23 @@ column(4,
                     )
                   )
          )
+       ),
+       tabsetPanel(
+         tabPanel("Logit Transport Model",
+                  wellPanel(
+                    fluidRow(
+                      column(4,
+                             numericInput("sigma", label = "Calibration parameter \\(\\sigma\\)", min = 0.001, value = 0.001, step = 0.001)
+                      )
+                    ),
+                    fluidRow(
+                      column(12,
+                             p("The parameter \\(\\sigma\\) is used when calcluating the elasticity of total output (pre-tax) with respect to accessibility. 
+                               It needs to be set so that the logit transport model (in the summary) is consistent with avg. travel time in the city. 
+                               This can be adjusted after the simulation has finished.")
+                             )
+                      )
+                    )
+                  )
        )
 )
