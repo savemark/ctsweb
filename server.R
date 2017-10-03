@@ -16,6 +16,7 @@ library(ggplot2)
 library(ineq)
 library(shinythemes)
 library(RColorBrewer)
+library(reshape2)
 library(gtools)
 library(abind)
 

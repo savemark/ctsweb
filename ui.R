@@ -17,9 +17,9 @@ shinyUI(
                "label {font-size: 10px;}",
                ".recalculating {opacity: 1.0;}"
     ),
-    titlePanel("Simulation of Wider Economic Benefits", windowTitle = "CTS WEB"),
+    h4("Simulation of Wider Economic Benefits", windowTitle = "CTS WEB"),
     h5("Centrum för Transportstudier, KTH"),
-    #helpText("Source code can be found ", a("here", href = "https://github.com/savemark/ctsweb")),
+    helpText("Source code can be found ", a("here", href = "https://github.com/savemark/ctsweb")),
     hr(),
     fluidRow(
       source("sidebar.R", local = TRUE)$value,

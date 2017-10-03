@@ -3,6 +3,7 @@ economy <- setClass("Economy",
                       city = "City",
                       population = "Population",
                       utility = "list",
+                      avg.utility = "numeric",
                       probability = "list",
                       spillover = "list",
                       sims = "list",
@@ -32,7 +33,7 @@ setReplaceMethod("setNetworkWeights",
 setGeneric("simulate", function(object, guess, ...) {standardGeneric("simulate")})
 setMethod("simulate",
           signature = "Economy",
-          definition = function(object, guess, fixed.landuse = FALSE) {
+          definition = function(object, guess, fixed.landuse = FALSE, avg.utility = NULL) {
             S <- nrow(object@network.weights)
             city <- object@city
             if (!fixed.landuse) {
@@ -44,7 +45,8 @@ setMethod("simulate",
                                   population = object@population,
                                   utility = object@utility,
                                   probability = object@probability,
-                                  spillover = object@spillover)
+                                  spillover = object@spillover,
+                                  avg.utility = avg.utility)
                 object@sims[[s]] <- sim
                 if (sim$solution$convergence == 0) {object@in.equilibrium[s] <- TRUE} else {object@in.equilibrium[s] <- FALSE}
               }
@@ -56,7 +58,8 @@ setMethod("simulate",
                                 population = object@population,
                                 utility = object@utility,
                                 probability = object@probability,
-                                spillover = object@spillover)
+                                spillover = object@spillover,
+                                avg.utility = avg.utility)
               if (sim$solution$convergence == 0) {object@in.equilibrium[1] <- TRUE} else {object@in.equilibrium[1] <- FALSE}
               scale <- array(apply(array(rep(colSums(aperm(getProbability(sim$population), c(2, 1, 3))), each = getNodeCount(sim$city)), 
                                          c(getNodeCount(sim$city), getNodeCount(sim$city), getNumberOfClasses(sim$population))), 3, t), 
@@ -71,7 +74,8 @@ setMethod("simulate",
                                   utility = object@utility,
                                   probability = object@probability,
                                   spillover = object@spillover,
-                                  scale = scale)
+                                  scale = scale,
+                                  avg.utility = avg.utility)
                 object@sims[[s]] <- sim
                 if (sim$solution$convergence == 0) {object@in.equilibrium[s] <- TRUE} else {object@in.equilibrium[s] <- FALSE}
               }
@@ -140,7 +144,7 @@ setMethod("getROAHBenefits",
               roah5 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*((getMarginalEffect(object@sims[[1]]$population)[ , , , 5]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(wage.y-wage.x)))
               res[ , i] <- c(roah1, roah2, roah3, roah4, roah5, sum(roah1+roah2+roah3+roah4+roah5))
             }
-            rownames(res) <- c("1. Travel costs", "2. Travel times", "3. Travel comfort", "4. Land prices", "5. Wage rate offers", "Sum")
+            rownames(res) <- c("Cost", "Time", "Comfort", "Price", "Wage rate", "Sum")
             return(res)
           }
 )
@@ -168,7 +172,7 @@ setMethod("getROAHBenefitsWithTax",
               price.y <- array(getVertexPrice(object@sims[[i]]$city), dim = c(getNodeCount(object@sims[[i]]$city), getNodeCount(object@sims[[i]]$city), getNumberOfClasses(object@sims[[i]]$population)))
               wage.y <- array(rep(t(getWageRate(object@sims[[i]]$population)), each = getNodeCount(object@sims[[i]]$city)), dim = c(getNodeCount(object@sims[[i]]$city), getNodeCount(object@sims[[i]]$city), getNumberOfClasses(object@sims[[i]]$population)))
               tax.y <- tax(object@sims[[i]]$city, object@sims[[i]]$population, tau)
-              roah1 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*(-1)*(cost.y-cost.x)) # marginal value of travel cost is -1*marginal value of ex. income
+              roah1 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*(-1)*(cost.y-cost.x)) # marginal value of travel cost is -1*marginal value of exog. income
               roah2 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*((getMarginalEffect(object@sims[[1]]$population)[ , , , 3]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(time.y-time.x)))
               roah3 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*((-time.x/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(comfort.y-comfort.x)))
               roah4 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*((getMarginalEffect(object@sims[[1]]$population)[ , , , 4]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(price.y-price.x)))
@@ -176,7 +180,7 @@ setMethod("getROAHBenefitsWithTax",
               tax.diff <- tax.y-tax.x
               res[ , i] <- c(roah1, roah2, roah3, roah4, roah5, tax.diff, sum(roah1+roah2+roah3+roah4+roah5+tax.diff))
             }
-            rownames(res) <- c("1. Travel costs", "2. Travel times", "3. Travel comfort", "4. Land prices", "5. Wage rate offers", "6. Tax Revenues", "Sum")
+            rownames(res) <- c("Cost", "Time", "Comfort", "Price", "Wage rate", "Tax", "Sum")
             return(res)
           }
 )
@@ -185,7 +189,7 @@ setGeneric("getTopDownBenefits", function(object, tau) {standardGeneric("getTopD
 setMethod("getTopDownBenefits", 
           signature = "Economy",
           definition = function (object, tau) {
-            res <- matrix(nrow = 4, ncol = length(seq_along(object@sims)))
+            res <- matrix(nrow = 6, ncol = length(seq_along(object@sims)))
             home.x <- apply(mapply(function(j) {getSizeOfEachClass(object@sims[[1]]$population)[j]*getProbability(object@sims[[1]]$population)[ , , j]}, 1:getNumberOfClasses(object@sims[[1]]$population), SIMPLIFY = "array"), 1, sum, na.rm = TRUE)
             lor.x <- sum(getArea(object@sims[[1]]$city)*getVertexPrice(object@sims[[1]]$city)) # /home.x
             tax.x <- tax(object@sims[[1]]$city, object@sims[[1]]$population, tau)
@@ -197,12 +201,14 @@ setMethod("getTopDownBenefits",
               wagerate.y <- array(rep(t(getWageRate(object@sims[[i]]$population)), each = getNodeCount(object@sims[[i]]$city)), dim = c(getNodeCount(object@sims[[i]]$city), getNodeCount(object@sims[[i]]$city), getNumberOfClasses(object@sims[[i]]$population)))
               base <- sum((getProbability(object@sims[[i]]$population)*getArgMax(object@sims[[i]]$population)[ , , , 1]-getProbability(object@sims[[1]]$population)*getArgMax(object@sims[[1]]$population)[ , , , 1])*(1-tau)*wagerate.x)
               scale <- sum((getProbability(object@sims[[i]]$population)*getArgMax(object@sims[[i]]$population)[ , , , 1])*(1-tau)*(wagerate.y-wagerate.x))
+              spillovers <- (1-tau)*0.5*sum((getProbability(object@sims[[i]]$population)*getArgMax(object@sims[[i]]$population)[ , , , 1]+getProbability(object@sims[[1]]$population)*getArgMax(object@sims[[1]]$population)[ , , , 1])*(wagerate.y-wagerate.x))
               wage.sum <- wageSum(object@sims[[1]]$population, object@sims[[i]]$population, tau)
               lor.diff <- lor.y-lor.x 
               tax.diff <- tax.y-tax.x
-              res[ , i] <- c(tax.diff, lor.diff, wage.sum$Base, wage.sum$Scale)
+              wage.sum.diff <- sum(wage.sum$Base, wage.sum$Scale)
+              res[ , i] <- c(tax.diff, lor.diff, spillovers, wage.sum$Base, wage.sum$Scale, wage.sum.diff)
             }
-            rownames(res) <- c("Tax revenues", "Land-owner revenues", "Wages: Matching and Work hours", "Wages: Spillovers")
+            rownames(res) <- c("Tax revenues", "Land-owner revenues", "Spillovers", "Wages: Matching and Work hours", "Wages: Spillovers", "Total difference in wages")# "Conditional diffrence in wages")
             return(res)
           }
 )
@@ -222,16 +228,44 @@ setMethod("getRanking",
               res[2, i] <- tbetweenness
             }
             res[3, ] <- getROAHBenefitsWithTax(object, tau)[7, ]
-            res[4, ] <- res[3 , ]/res[1 , ] # ROAH/Length
-            res[4, is.nan(res[4, ])] <- 0 # ROAH/Length
-            res[5, ] <- getROAHBenefitsWithTax(object, tau)[7, ]*res[2, ] # ROAH*Betweenness
+            res[4, ] <- res[3 , ]/res[1 , ] # Benefits/Length
+            res[4, is.nan(res[4, ])] <- 0 # Benefits/Length
+            res[5, ] <- getROAHBenefitsWithTax(object, tau)[7, ]*res[2, ] # Benefits*Betweenness
             res[5, is.nan(res[5, ])] <- 0 
             res[6, ] <- rank(res[4 , ])
             res[7, ] <- rank(res[5 , ])
             #res <- t(res)
-            rownames(res) <- c("Total length", "Total betweenness", "ROAH", "ROAH/length", "ROAH*betweenness", "Rank (length)", "Rank (betweenness)")
+            rownames(res) <- c("Total length", "Total betweenness", "Benefits", "Benefits/length", "Benefits*betweenness", "Rank (length)", "Rank (betweenness)")
             return(res)
            }
+)
+
+setGeneric("getTotalBenefitsGivenBudget", function(object, tau, ckm = 1, budget = Inf) {standardGeneric("getTotalBenefitsGivenBudget")})
+setMethod("getTotalBenefitsGivenBudget", 
+          signature = "Economy",
+          definition = function (object, tau, ckm = 1) {
+            res <- matrix(nrow = length(seq_along(object@sims)), ncol = 7)
+            for (i in seq_along(object@sims)) {
+              tb <- getEdgeTime(object@sims[[1]]$city)!=getEdgeTime(object@sims[[i]]$city) # Time bools
+              cb <- getEdgeCost(object@sims[[1]]$city)!=getEdgeCost(object@sims[[i]]$city) # Cost bools
+              index <- tb|cb # Either the time or the cost has been changed (or none)
+              tlength <- sum(getEdgeLength(object@sims[[1]]$city)[index])
+              res[i, 5] <- tlength
+              res[i, 4] <- tlength*ckm
+              res[i, 1] <- i
+            }
+            res[ , 2] <- getROAHBenefitsWithTax(object, tau)[7, ]/res[ , 4]
+            res[ , 3] <- getROAHBenefitsWithTax(object, tau)[7, ]
+            colnames(res) <- c("Scenario", "B/C", "B", "C", "Length", "ACC C", "ACC B")
+            res <- res[order(-res[ , "B/C"]), ]
+            accc <- cumsum(res[ , "C"])
+            accb <- cumsum(res[ , "B"])
+            res[ , 6] <- accc
+            res[ , 7] <- accb
+            res <- rbind(c(1, NA, NA, NA, NA, 0, 0), res)
+            res <- res[-nrow(res), ]
+            return(res)
+          }
 )
 
 setGeneric("getLogitTransportModel", function(object, sigma) {standardGeneric("getLogitTransportModel")})
@@ -343,6 +377,8 @@ setMethod("getDataFrame",
                 df <- merge(x, y, by = intersect(names(x), names(y)))
                 return(df)
               }
+              df.wmaxj <- array2df(array(rep(apply(getUnderlyingWageRate(x@sims[[id]]$population), 2, max), each = getNodeCount(x@sims[[id]]$city)),
+                                      dim = c(getNodeCount(x@sims[[id]]$city), getNodeCount(x@sims[[id]]$city), getNumberOfClasses(x@sims[[id]]$population))), label.x = "Max. Under. Wage Rate")
               df.wagerate.u <- array2df(array(rep(t(getUnderlyingWageRate(x@sims[[id]]$population)), each = getNodeCount(x@sims[[id]]$city)), 
                                               dim = c(getNodeCount(x@sims[[id]]$city), getNodeCount(x@sims[[id]]$city), getNumberOfClasses(x@sims[[id]]$population))), label.x = "Under. Wage Rate")
               df.wagerate <- array2df(array(rep(t(getWageRate(x@sims[[id]]$population)), each = getNodeCount(x@sims[[id]]$city)), 
@@ -356,8 +392,8 @@ setMethod("getDataFrame",
               df.x3 <- array2df(getArgMax(x@sims[[id]]$population)[ , , , 3], label.x = "Leisure")
               df.x4 <- array2df(getArgMax(x@sims[[id]]$population)[ , , , 4], label.x = "Land use")
               df.x5 <- array2df(getArgMax(x@sims[[id]]$population)[ , , , 5], label.x = "Travel time")
-              df <- Reduce(mergeList, list(df.prob, df.wagerate.u, df.wagerate, df.vot, df.vou, df.u, df.x1, df.x2, df.x3, df.x4, df.x5))
-              df <- df[ , c("d3", "d1", "d2", "Pr", "Under. Wage Rate", "Wage Rate", "VoTT", "VoU", "Ind utility", "Work hours", "Consumption", "Leisure", "Land use", "Travel time")]
+              df <- Reduce(mergeList, list(df.prob, df.wagerate.u, df.wagerate, df.wmaxj, df.vot, df.vou, df.u, df.x1, df.x2, df.x3, df.x4, df.x5))
+              df <- df[ , c("d3", "d1", "d2", "Pr", "Under. Wage Rate", "Wage Rate", "Max. Under. Wage Rate", "VoTT", "VoU", "Ind utility", "Work hours", "Consumption", "Leisure", "Land use", "Travel time")]
               df <- df[order(df$d3, df$d1, df$d2), ]
               names(df)[1:3] <- c("n", "i", "j")
               row.names(df) <- NULL
@@ -506,6 +542,24 @@ setMethod("plot",
                         main = NULL,
                         xlab = xlab
                   )
+                  lines(density(getUnderlyingWageRate(x@sims[[i]]$population), 
+                                weights = eval(weight)),
+                        col = rainbow(length(x@sims))[i],
+                        main = NULL,
+                        xlab = xlab
+                  )
+                  # lines(density(ifelse(getWageRate(x@sims[[i]]$population)>getWageRate(x@sims[[1]]$population),
+                  #                      getWageRate(x@sims[[i]]$population),
+                  #                      getWageRate(x@sims[[1]]$population)
+                  # ), 
+                  # weights = eval(weight)),
+                  # col = heat.colors(length(x@sims))[i],
+                  # main = NULL,
+                  # xlab = xlab
+                  # )
+                  # legend("top", 
+                  #        legend = as.character(1:length(x@sims)), 
+                  #        lty = c(1,1), col = heat.colors(length(x@sims)))
                 }
               } else if (type == "income") {
                 for (i in seq_along(x@sims)) {
@@ -529,9 +583,10 @@ setMethod("plot",
                   )
                 }
               }
-              legend("topright", 
-                     legend = as.character(1:length(x@sims)), 
-                     lty = c(1,1), col = rainbow(length(x@sims)))
+              #legend("topright", 
+               #      legend = as.character(1:length(x@sims)), 
+                #     lty = c(1, 1), col = rainbow(length(x@sims)),
+                 #    cex = 0.5, seg.len = 0.5, ncol = (length(x@sims)%/%30+1))
             }
             switch(type,
                    default = plot(x@city, ...),
@@ -566,10 +621,19 @@ setMethod("persp3D",
                       apply(getProbability(x@sims[[sid]]$population), 2, sum, na.rm = TRUE)/getArea(x@sims[[sid]]$city),
                       ...)
             }
+            income <- function(x, sid, ...) {
+              # Destination income
+              persp3D(x@sims[[sid]]$city,
+                      apply(getProbability(x@sims[[sid]]$population)*getArgMax(x@sims[[sid]]$population)[ , , , 1]*array(rep(t(getWageRate(x@sims[[sid]]$population)), each = getNodeCount(x@sims[[sid]]$city)), 
+                                                                                                                       dim = c(getNodeCount(x@sims[[sid]]$city), getNodeCount(x@sims[[sid]]$city), getNumberOfClasses(x@sims[[sid]]$population))), 
+                            2, sum, na.rm = TRUE)/apply(getProbability(x@sims[[sid]]$population), 2, sum, na.rm = TRUE),
+                      ...)
+            }
             switch(type,
                    landprice = landprice(x, sid, ...),
                    residence = residence(x, sid, ...),
-                   work = work(x, sid, ...)
+                   work = work(x, sid, ...),
+                   income = income(x, sid, ...)
                    )
           }
 )

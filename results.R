@@ -50,7 +50,20 @@ column(12,
                              )
                     ),
                     tabPanel("Non-fixed vs. fixed",
-                             plotOutput("scatter_nonfixed_vs_fixed", width = 400)
+                             verticalLayout(
+                               splitLayout(
+                                 plotOutput("scatter_nonfixed_vs_fixed", width = 400),
+                                 plotOutput("utility_km", width = 400),
+                                 plotOutput("utility_betweenness", width = 400),
+                                 plotOutput("utility_per_km_betweenness", width = 400)
+                               )
+                             ),
+                             verticalLayout(
+                               splitLayout(
+                                 plotOutput("boxplot", width = 400),
+                                 plotOutput("boxplot_both", width = 400)
+                               )
+                             )
                     ),
                     tabPanel("Equity",
                              fluidRow(
@@ -70,19 +83,22 @@ column(12,
                                     uiOutput("scenario_ID_base_plot"),
                                     plotOutput("price3dA", width = "100%", height = "600px"),
                                     plotOutput("residency3dA", width = "100%", height = "600px"),
-                                    plotOutput("work3dA", width = "100%", height = "600px")
+                                    plotOutput("work3dA", width = "100%", height = "600px"),
+                                    plotOutput("income3dA", width = "100%", height = "600px")
                              ),
                              column(4,
                                     uiOutput("scenario_ID_alt_plot"),
                                     plotOutput("price3dB", width = "100%", height = "600px"),
                                     plotOutput("residency3dB", width = "100%", height = "600px"),
-                                    plotOutput("work3dB", width = "100%", height = "600px")
+                                    plotOutput("work3dB", width = "100%", height = "600px"),
+                                    plotOutput("income3dB", width = "100%", height = "600px")
                              ),
                              column(4,
                                     uiOutput("scenario_ID_fixed_plot"),
                                     plotOutput("price3d_fixed", width = "100%", height = "600px"),
                                     plotOutput("residency3d_fixed", width = "100%", height = "600px"),
-                                    plotOutput("work3d_fixed", width = "100%", height = "600px")
+                                    plotOutput("work3d_fixed", width = "100%", height = "600px"),
+                                    plotOutput("income3d_fixed", width = "100%", height = "600px")
                              )
                     )
                   )

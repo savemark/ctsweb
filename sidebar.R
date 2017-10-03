@@ -4,13 +4,13 @@ column(4,
                   wellPanel(
                     fluidRow(
                       column(6, 
-                             numericInput("n", label = "Number of classes \\(N\\)", min = 25, max = 100, value = 250, step = 1),
+                             numericInput("n", label = "Number of classes \\(N\\)", min = 25, max = 1000, value = 1000, step = 1),
                              numericInput("delta", label = "Scale parameter \\(\\delta>0\\) for the error terms", value = 0.01, step = 0.001),
-                             numericInput("y", label = "Exogenous income \\(y\\) per day", min = 0, value = 100, step = 10)
+                             numericInput("y", label = "Exogenous income \\(y\\) per day", min = 0, value = 0, step = 10)
                       ),
                       column(6,
                              numericInput("tau", label = "Taxation rate \\(\\tau\\)", min = 0, max = 0.5, value = 0.30, step = 0.01),
-                             numericInput("spillover.eps", label = "Spillover effect parameter \\(\\gamma\\)", min = 0, value = 0.03, step = 0.01),
+                             numericInput("spillover.eps", label = "Spillover effect parameter \\(\\gamma\\)", min = 0, value = 1, step = 0.01),
                              numericInput("TIME", label = "Available time per day \\(T \\text{ [h]}\\)", min = 15, max = 24, value = 16, step = 1)
                       )
                     ),
@@ -59,7 +59,7 @@ column(4,
                     fluidRow(
                       column(6, 
                              numericInput("meanlog", label = "log(mean)", min = log(100000), max = log(400000), value = 12.84, step = 0.01),
-                             numericInput("lowerbound", label = "Lower bound", min = 0, value = 150000, step = 1),
+                             numericInput("lowerbound", label = "Lower bound", min = 0, value = 200000, step = 1),
                              numericInput("days", label = "Work days per year", min = 200, max = 365, value = 228, step = 1)
                       ),
                       column(6, 

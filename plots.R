@@ -26,7 +26,6 @@ output$populationPreferenceHistogram <- renderPlot({
   lines(density(getDestinationPreference(populationInput())), lty = "dotted")
 })
 
-
 # Density plots -----------------------------------------------------------
 
 # output$opdensity <- renderPlot({ # Origin quality
@@ -176,6 +175,39 @@ output$price3d_fixed <- renderPlot({
           sub = "Fixed land-use")
 }, width = "auto")
 
+output$income3dA <- renderPlot({
+  if (is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_base_plot)) return(invisible(NULL))
+  persp3D(simulateEconomyInput(), 
+          type = "income",
+          sid = as.numeric(input$scenario_id_base_plot),
+          linear = ifelse(parameters$type == "grid" || parameters$type == "random", TRUE, FALSE),
+          zlab = "Destination income, pre-tax",
+          sub = "Base scenario")
+}, width = "auto")
+
+output$income3dB <- renderPlot({
+  if (is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_alt_plot)) return(invisible(NULL))
+  persp3D(simulateEconomyInput(), 
+          type = "income",
+          sid = as.numeric(input$scenario_id_alt_plot),
+          linear = ifelse(parameters$type == "grid" || parameters$type == "random", TRUE, FALSE),
+          zlab = "Destination income, pre-tax",
+          sub = "Do-something scenario")
+}, width = "auto")
+
+output$income3d_fixed <- renderPlot({
+  if (is.null(simulateEconomyFixedInput())) return(invisible(NULL))
+  if (is.null(input$scenario_id_fixed_plot)) return(invisible(NULL))
+  persp3D(simulateEconomyFixedInput(), 
+          type = "income",
+          sid = as.numeric(input$scenario_id_fixed_plot),
+          linear = ifelse(parameters$type == "grid" || parameters$type == "random", TRUE, FALSE),
+          zlab = "Destination income, pre-tax",
+          sub = "Fixed land-use")
+}, width = "auto")
+
 # Non-fixed land-use
 output$argmax1 <- renderPlot({
   if (is.null(simulateEconomyInput())) return(invisible(NULL))
@@ -259,7 +291,91 @@ output$vktdensi_fixed <- renderPlot({ # VKT
 })
 
 output$scatter_nonfixed_vs_fixed <- renderPlot({
-  if (is.null(simulateEconomyFixedInput())) return(invisible(NULL))
+  if (is.null(simulateEconomyFixedInput()) || is.null(simulateEconomyInput())) return(invisible(NULL))
   plot(getROAHBenefitsWithTax(simulateEconomyFixedInput(), parameters$tau)[7, ], getROAHBenefitsWithTax(simulateEconomyInput(), parameters$tau)[7, ], xlab = "Fixed land use", ylab = "Non-Fixed land use")
   abline(0, 1)
+})
+
+output$utility_km <- renderPlot({
+  if (is.null(simulateEconomyFixedInput()) || is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (length(unique(getRanking(simulateEconomyFixedInput(), parameters$tau)[1, ])) < 4) return(invisible(NULL))
+  spline <- smooth.spline(getRanking(simulateEconomyInput(), parameters$tau)[1, ], getROAHBenefitsWithTax(simulateEconomyInput(), parameters$tau)[7, ])
+  spline_fixed <- smooth.spline(getRanking(simulateEconomyFixedInput(), parameters$tau)[1, ], getROAHBenefitsWithTax(simulateEconomyFixedInput(), parameters$tau)[7, ])
+  plot(getRanking(simulateEconomyFixedInput(), parameters$tau)[1, ], getROAHBenefitsWithTax(simulateEconomyFixedInput(), parameters$tau)[7, ], xlab = "Total link length (km)", ylab = "ROAH Benefits", col = "red")
+  points(getRanking(simulateEconomyInput(), parameters$tau)[1, ], getROAHBenefitsWithTax(simulateEconomyInput(), parameters$tau)[7, ], col = "blue")
+  lines(spline, col = "blue")
+  lines(spline_fixed, col = "red")
+  legend("topright", 
+         legend = c("Fixed", "Non-fixed"), 
+         lty = c(1,1), col = c("red", "blue"))
+})
+
+output$utility_betweenness <- renderPlot({
+  if (is.null(simulateEconomyFixedInput()) || is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (length(unique(getRanking(simulateEconomyFixedInput(), parameters$tau)[2, ])) < 4) return(invisible(NULL))
+  spline <- smooth.spline(getRanking(simulateEconomyInput(), parameters$tau)[2, ], getROAHBenefitsWithTax(simulateEconomyInput(), parameters$tau)[7, ])
+  spline_fixed <- smooth.spline(getRanking(simulateEconomyFixedInput(), parameters$tau)[2, ], getROAHBenefitsWithTax(simulateEconomyFixedInput(), parameters$tau)[7, ])
+  plot(getRanking(simulateEconomyFixedInput(), parameters$tau)[2, ], getROAHBenefitsWithTax(simulateEconomyFixedInput(), parameters$tau)[7, ], xlab = "Total link betweenness centrality", ylab = "ROAH Benefits", col = "red")
+  points(getRanking(simulateEconomyInput(), parameters$tau)[2, ], getROAHBenefitsWithTax(simulateEconomyInput(), parameters$tau)[7, ], col = "blue")
+  lines(spline, col = "blue")
+  lines(spline_fixed, col = "red")
+  legend("topright", 
+         legend = c("Fixed", "Non-fixed"), 
+         lty = c(1,1), col = c("red", "blue"))
+})
+
+output$utility_per_km_betweenness <- renderPlot({
+  if (is.null(simulateEconomyFixedInput()) || is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (length(unique(getRanking(simulateEconomyFixedInput(), parameters$tau)[2, ])) < 4) return(invisible(NULL))
+  spline <- smooth.spline(getRanking(simulateEconomyInput(), parameters$tau)[2, ], getRanking(simulateEconomyInput(), parameters$tau)[4, ])
+  spline_fixed <- smooth.spline(getRanking(simulateEconomyFixedInput(), parameters$tau)[2, ], getRanking(simulateEconomyFixedInput(), parameters$tau)[4, ])
+  plot(getRanking(simulateEconomyFixedInput(), parameters$tau)[2, ], getRanking(simulateEconomyFixedInput(), parameters$tau)[4, ], xlab = "Total link betweenness centrality", ylab = "ROAH Benefits per km", col = "red")
+  points(getRanking(simulateEconomyInput(), parameters$tau)[2, ], getRanking(simulateEconomyInput(), parameters$tau)[4, ], col = "blue")
+  lines(spline, col = "blue")
+  lines(spline_fixed, col = "red")
+  legend("topright", 
+         legend = c("Fixed", "Non-fixed"), 
+         lty = c(1,1), col = c("red", "blue"))
+})
+
+output$boxplot <- renderPlot({
+  if (is.null(simulateEconomyInput())) return(invisible(NULL))
+  if (dim(getNetworkWeights(simulateEconomyInput()))[1] < 3) return(invisible(NULL))
+  benefits <- getROAHBenefitsWithTax(simulateEconomyInput(), parameters$tau)[c(1,2,4,5,6), -1]
+  df <- melt(benefits)
+  boxplot(formula = value ~ Var1, data = df)
+})
+
+output$boxplot_both <- renderPlot({
+  if (is.null(simulateEconomyInput()) || is.null(simulateEconomyFixedInput())) return(invisible(NULL))
+  if (dim(getNetworkWeights(simulateEconomyInput()))[1] < 3) return(invisible(NULL))
+  if (dim(getNetworkWeights(simulateEconomyFixedInput()))[1] < 3) return(invisible(NULL))
+  benefits <- getROAHBenefitsWithTax(simulateEconomyInput(), parameters$tau)[c(1,2,4,5,6), -1]
+  benefits_f <- getROAHBenefitsWithTax(simulateEconomyFixedInput(), parameters$tau)[c(1,2,4,5,6), -1]
+  colnames(benefits) <- colnames(benefits, do.NULL = FALSE, prefix = "Sim.")
+  colnames(benefits_f) <- colnames(benefits_f, do.NULL = FALSE, prefix = "Sim.")
+  benefits <- cbind(LU = "NF", benefits)
+  benefits_f <- cbind(LU = "F", benefits_f)
+  benefits <- cbind(Variable = rownames(benefits), benefits)
+  benefits_f <- cbind(Variable = rownames(benefits_f), benefits_f)
+  rownames(benefits_f) <- rownames(benefits) <- NULL
+  df <- merge(benefits, benefits_f, all = TRUE)
+  for (i in 1:(dim(df)[2]-2)) {df[, (i+2)] <- as.numeric(as.character(df[, (i+2)]))}
+  df <- melt(df)
+  boxplot(formula = value ~ Variable, data = df, subset = LU == "NF",
+          boxwex  = 0.25,
+          at = 1:5 - 0.2,
+          ylim = c(floor(min(df$value))-1, ceiling(max(df$value))+1),
+          xaxt = "n",
+          frame.plot = TRUE)
+  boxplot(formula = value ~ Variable, data = df, subset = LU == "F", 
+          col = "grey",
+          boxwex = 0.25,
+          at = 1:5 + 0.2,
+          xaxt = "n",
+          add = TRUE)
+  axis(side = 1, at =  1:5, labels = c("TC", "LP", "TR", "TR", "WR"))
+  legend("topleft", 
+         c("Nonfixed", "Fixed"), 
+         lty = c(1, 1), col = c("white", "grey"))
 })

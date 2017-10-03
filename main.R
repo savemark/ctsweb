@@ -16,7 +16,7 @@ column(8,
                                                    c("Default" = "default",
                                                      "Random" = "random",
                                                      "Grid" = "grid"),
-                                                   selected = "grid",
+                                                   selected = "default",
                                                    inline = TRUE)
                                ),
                                column(6,                     

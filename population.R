@@ -18,7 +18,7 @@ population <- setClass("Population",
                          if (!object@n%%1 == 0)
                            return("N needs to be an integer")
                          if (!object@n > 1)
-                           return("N must be greater than 1") # Since we are working with arrays of dimension >= 2. Could be fixed to include 1?
+                           return("N must be greater than 1") # Since we are working with arrays of dimension >= 3. Could be fixed to include 1?
                          else {
                            return(TRUE)
                          }
@@ -273,10 +273,20 @@ rtruncated_log_normal <- function(x, a = - Inf, b = Inf, meanlog, sdlog)
 
 setMethod("initialize",
           signature = "Population",
-          function(.Object, x, y, lowerbound = 150000, upperbound = 10^6, meanlog = log(336000), sdlog = log(100), days = 228, hours = 8, omean = 0, osd = 0.25, dmean = 0, dsd = 0.25, ...) {
+          function(.Object, x, y, nk = NULL, lowerbound = 150000, upperbound = 10^6, meanlog = log(336000), sdlog = log(100), 
+                   days = 228, hours = 8, omean = 0, osd = 0.25, dmean = 0, dsd = 0.25, ...) {
             setNumberOfClasses(.Object) <- x
             setNodes(.Object) <- y
-            setSizeOfEachClass(.Object) <- rep(1, times = x) # Not implemented yet
+            if (is.null(nk)) {
+              setSizeOfEachClass(.Object) <- rep(1, times = x)
+            } else {
+              if (length(nk) == 1) {
+                setSizeOfEachClass(.Object) <- rep(nk, times = x)
+              } else {
+                if(length(nk) != x)
+                  stop("The number of classes needs to be equal to the length of the vector of counts (nk) per class.")
+              }
+            }
             setWageRate(.Object) <- matrix(rtruncated_log_normal(y*x, a = lowerbound, b = upperbound, meanlog, sdlog)/{hours*days}, x, y)
             setUnderlyingWageRate(.Object) <- getWageRate(.Object)
             setOriginPreference(.Object) <- matrix(rnorm(x*y, mean = omean, sd = osd), x, y)
@@ -295,8 +305,8 @@ setMethod("show",
             cat(" ", "\n",
                 #"Sector id: ", object@sectorid, "\n",
                 "Number of classes: ", object@n, "\n",
-                #"Avg. number of individuals per class", mean(object@nk), "\n",
-                #"Total population", sum(object@nk),"\n",
+                "Avg. number of individuals per class", mean(object@nk), "\n",
+                "Total population: ", sum(object@nk),"\n",
                 "Number of sources of income: ", object@nodes, "\n")
             cat(" ", "\n",
                 "WAGE RATES AND PREFERENCES", "\n",

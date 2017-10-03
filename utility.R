@@ -6,11 +6,12 @@ indirectUtilityClosure <- function(parameter) {
   # paramater[5] = tau (1-taxation rate)
   # parameter[6] = y (exogenous income)
   # parameter[7] = Time (16 or 24)
+  # parameter[8] = sigma (variance parameter)
+  # If the function returns NaNs check if cost c and time t are of appropriate sizes
   function(p, w, c, t, op, dp) {
     c <- c+mapply(function(i) {t(c[ , , i])}, 1:dim(c)[3], SIMPLIFY = "array")
     t <- t+mapply(function(i) {t(t[ , , i])}, 1:dim(t)[3], SIMPLIFY = "array")
-    v <- log(parameter[5]*w*(parameter[7]-t)+parameter[6]-c)-log((parameter[5]*w)^parameter[2]*p^parameter[3])-parameter[4]*t+op+dp+log({parameter[1]^parameter[1]}*{parameter[2]^parameter[2]}*{parameter[3]^parameter[3]})
-    #warn <<- tryCatch(log(parameter[5]*w*(parameter[7]-t)+parameter[6]-c), warning = function(w) {which(is.nan(log(parameter[5]*w*(parameter[7]-t)+parameter[6]-c)))})
+    v <- -log((parameter[5]*w)^parameter[2]*{p^parameter[3]})+log(parameter[5]*w*(parameter[7]-t)+parameter[6]-c)-parameter[4]*t+op+dp+log({parameter[1]^parameter[1]}*{parameter[2]^parameter[2]}*{parameter[3]^parameter[3]})
     return(v)
   }
 }
@@ -45,6 +46,15 @@ marginalEffectsClosure <- function(parameter) {
   }
 }
 
+expectedUtilityClosure <- function(parameter) {
+  function(v) {
+    maxu <- apply(v, 3, max)
+    maxu.arr <- array(rep(maxu, each = nrow(v)^2), dim = dim(v))
+    logsum <- maxu+parameter[8]*log(apply(exp((v-maxu.arr)/parameter[8]), 3, sum))
+    return(logsum)
+  }
+}
+
 utilityWrapper <- function(parameter) {
   # This function returns a list of functions
   if(parameter[1]+parameter[2]+parameter[3] != 1)
@@ -56,7 +66,8 @@ utilityWrapper <- function(parameter) {
   return(
     list(indirectUtility = indirectUtilityClosure(parameter),
          argmaxUtility = argmaxUtilityClosure(parameter),
-         marginalEffects = marginalEffectsClosure(parameter)
+         marginalEffects = marginalEffectsClosure(parameter),
+         expectedUtility = expectedUtilityClosure(parameter)
     )
   )
 }

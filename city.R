@@ -341,21 +341,19 @@ setMethod("show",
             cat("An object of class", class(object), "\n")
             cat(" ", "\n",
                 "ROAD NETWORK", "\n",
-                "Number of network nodes: ", length(V(object@network)), "\n",
                 "Number of network links: ", length(E(object@network)), "\n",
-                "Longest link", "\n",
-                "Id(s):", which(E(object@network)$length == max(E(object@network)$length), arr.ind = TRUE), "\n",
+                "Longest link(s):", which(E(object@network)$length == max(E(object@network)$length), arr.ind = TRUE), "\n",
                 "Length: ", max(E(object@network)$length), "\n",
-                "Shortest link", "\n",
-                "Id(s):", which(E(object@network)$length == min(E(object@network)$length), arr.ind = TRUE), "\n",
+                "Shortest link(s):", which(E(object@network)$length == min(E(object@network)$length), arr.ind = TRUE), "\n",
                 "Length: ", min(E(object@network)$length), "\n")
             cat(" ", "\n",
                 "ZONES", "\n",
                 "Number of zones: ", length(V(object@network)), "\n",
-                "Largest cell area: ", max(V(object@network)$area), "\n",
-                "Id(s):", which(V(object@network)$area == max(V(object@network)$area), arr.ind = TRUE), "\n",
-                "Smallest cell area: ", min(V(object@network)$area), "\n",
-                "Id(s):", which(V(object@network)$area == min(V(object@network)$area), arr.ind = TRUE), "\n")
+                "Total area: ", sum(V(object@network)$area), "\n", 
+                "Largest cell(s): ", which(V(object@network)$area == max(V(object@network)$area), arr.ind = TRUE), "\n",
+                "Area:",  max(V(object@network)$area), "\n",
+                "Smallest cell(s): ", which(V(object@network)$area == min(V(object@network)$area), arr.ind = TRUE), "\n",
+                "Area:", min(V(object@network)$area), "\n")
             cat(" ", "\n",
                 "PATHS", "\n",
                 "Number of paths: ", dim(getEdgePath(object))[2], "\n",
@@ -376,6 +374,10 @@ setMethod("plot",
           signature = c(x = "City", y = "missing"),
           function(x, y, ...) {
             # Settings
+            args <- list(...)
+            edge.label.ids <- ifelse(is.null(args$edge.label.ids) || args$edge.label.ids == TRUE, TRUE, FALSE)
+            if (edge.label.ids) {edge.label <- as_ids(E(x@network))} else {edge.label <- NA}
+            if (is_directed(x@network)) {edge.curved <- 0.1} else {edge.curved <- 0}
             v <- length(V(x@network))
             e <- length(E(x@network))
             edge.flow <- rep(0, e)
@@ -411,8 +413,8 @@ setMethod("plot",
                  vertex.frame.color = NA,
                  edge.color = E(x@network)$edge.color,
                  edge.arrow.size = 0.4,
-                 edge.curved = 0.1,
-                 edge.label = as_ids(E(x@network)),
+                 edge.curved = edge.curved,
+                 edge.label = edge.label,
                  edge.label.cex = 0.8,
                  edge.label.color = "black")
             plot(x@cells, 
