@@ -9,7 +9,8 @@ city <- setClass("City",
                            distance = "matrix", # Distance matrix
                            edgepath = "matrix", # Edge-path matrix
                            time = "matrix", # Travel time matrix
-                           cost = "matrix"), # Travel cost matrix
+                           cost = "matrix", # Travel cost matrix
+                           comfort = "matrix"), # Travel comfort
                  validity = function(object) {
                    if (nrow(object@coordinate) != nrow(object@adjacency))
                      paste("The number of rows of x (", nrow(object@coordinate), ") and y (", nrow(object@adjacency), ") should have been equal", sep = "")
@@ -89,6 +90,14 @@ setMethod("getCost",
           signature = "City",
           definition = function(object) {
             return(object@cost)
+          }
+)
+
+setGeneric("getComfort", function(object) {standardGeneric("getComfort")})
+setMethod("getComfort",
+          signature = "City",
+          definition = function(object) {
+            return(object@comfort)
           }
 )
 
@@ -268,6 +277,28 @@ setReplaceMethod("setEdgeSpeed",
                  }
 )
 
+setGeneric("setEdgeComfort", function(object, index = E(object@network), value) {standardGeneric("setEdgeComfort")})
+setMethod("setEdgeComfort",
+          signature = "City",
+          definition = function(object, index = E(object@network), value) {
+            object@network <- set_edge_attr(object@network, "comfort", index, value)
+            object@comfort <- distances(object@network, mode = "out", weights = E(object@network)$comfort)
+            return(object)
+          }
+)
+
+setGeneric("setEdgeComfort<-", function(object, index = E(object@network), value) {standardGeneric("setEdgeComfort<-")})
+setReplaceMethod("setEdgeComfort",
+                 signature = "City",
+                 definition = function(object, index = E(object@network), value) {
+                   object@network <- set_edge_attr(object@network, "comfort", index, value)
+                   object@comfort <- distances(object@network, mode = "out", weights = E(object@network)$comfort)
+                   return(object)
+                 }
+)
+
+# ------------------------------------------------------------------------------
+
 vec_shortest_paths <- Vectorize(function(i, x) {
   shortest_paths(getGraph(x), i, weights = E(getGraph(x))$length, mode = "out", output = "epath")$epath
 }, vectorize.args = c("i"), SIMPLIFY = FALSE) # Edge ids of the path
@@ -303,7 +334,7 @@ as.path.id <- function(x, from, to) {
 
 setMethod("initialize",
           signature = "City",
-          function(.Object, x, y, speed = 1, costfactor = 1, mode = "directed") {
+          function(.Object, x, y, speed = 1, costfactor = 1, comfort = 1, mode = "directed") {
             .Object@coordinate <- x
             .Object@adjacency <- y
             edge.length <- y*rdist(x) # link lengths
@@ -312,21 +343,16 @@ setMethod("initialize",
             V(.Object@network)$area <- tri$summary$dir.area[1:length(x[ , 1])]
             .Object@cells <- tri
             # Vertex size
-            #deg <- degree(.Object@network, mode = "all")
-            #V(.Object@network)$size <- deg
+            # deg <- degree(.Object@network, mode = "all")
+            # V(.Object@network)$size <- deg
             V(.Object@network)$x <- x[ , 1] # Node coordinates
             V(.Object@network)$y <- x[ , 2] # Node coordinates
             E(.Object@network)$length <- E(.Object@network)$weight
             .Object@distance <- distances(.Object@network, mode = "out", weights = E(.Object@network)$length)
-            # Set the distance within a zone to half the distance to nearest zone
-            #diag(.Object@distance) <- NA
-            #diagonal <- apply(.Object@distance, 2, min, na.rm = TRUE)
-            #diag(.Object@distance) <- diagonal/2
-            # Edge-Path Matrix
-            .Object@edgepath <- edgePathMatrix(.Object)
-            #
+            .Object@edgepath <- edgePathMatrix(.Object) # Edge-Path Matrix
             .Object <- setEdgeSpeed(.Object, value = speed)
             .Object <- setEdgeCostFactor(.Object, value = costfactor)
+            .Object <- setEdgeComfort(.Object, value = comfort)
             # Vertex betweenness centrality (could use GC as weight?)
             V(.Object@network)$betweenness <- betweenness(.Object@network, V(.Object@network), weights = NULL)
             E(.Object@network)$betweenness <- edge_betweenness(.Object@network, E(.Object@network), weights = NULL)
@@ -403,7 +429,9 @@ setMethod("plot",
                 mar = c(0, 0, 0, 0) + 2, 
                 bg = "#ffffff"
             )
-            plot(0, 0, type = "n", axes = TRUE, xlim = xlim, ylim = ylim, xlab = NA, ylab = NA)
+            plot(0, 0, type = "n", axes = FALSE, xlim = xlim, ylim = ylim, xlab = NA, ylab = NA)
+            axis(1, cex.axis = 0.8)
+            #axis(2, cex.axis = 0.7)
             plot(x@network, 
                  rescale = FALSE, 
                  add = TRUE,
@@ -414,7 +442,7 @@ setMethod("plot",
                  edge.color = E(x@network)$edge.color,
                  edge.arrow.size = 0.4,
                  edge.curved = edge.curved,
-                 edge.label = edge.label,
+                 edge.label = NA,#edge.label,
                  edge.label.cex = 0.8,
                  edge.label.color = "black")
             plot(x@cells, 
@@ -497,7 +525,7 @@ setMethod("plot",
             par(pty = "s", mar = c(0, 0, 0, 0)+0.1)
             plot(x@cells, wlines = "tess", col = "black", main = "", sub = "")
             plot(x@network, rescale = FALSE, add = TRUE,
-                 vertex.label = NA,
+                 #vertex.label = NA,
                  vertex.label.font = 1,
                  vertex.label.cex = 0.7,
                  vertex.label.degree = pi/2,

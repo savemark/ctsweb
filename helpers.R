@@ -42,20 +42,6 @@ equityPlot <- function(x, probs = seq(0, 1, 0.2)) { # x comes from roah4
   return(g)
 }
 
-tax <- function(city, population, tau) {
-  wagerate <- array(rep(t(getWageRate(population)), each = getNodeCount(city)), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population)))
-  sum(apply(tau*wagerate*getArgMax(population)[ , , , 1]*getProbability(population), 3, sum))
-}
-
-wageSum <- function(x, y, tau) {
-  # x, y population
-  wagerateA <- array(rep(t(getWageRate(x)), each = getNodes(x)), dim = c(getNodes(x), getNodes(x), getNumberOfClasses(x)))
-  wagerateB <- array(rep(t(getWageRate(y)), each = getNodes(y)), dim = c(getNodes(y), getNodes(y), getNumberOfClasses(y)))
-  base <- sum((getProbability(y)*getArgMax(y)[ , , , 1]-getProbability(x)*getArgMax(x)[ , , , 1])*(1-tau)*wagerateA)
-  scale <- sum((getProbability(y)*getArgMax(y)[ , , , 1])*(1-tau)*(wagerateB-wagerateA))
-  return(list(Base = base, Scale = scale))
-}
-
 weighted.histograms <- function(x, y, wx, wy, main = NULL, xlab = NULL) {
   histx <- weighted.hist(x, 
                          w = wx,
