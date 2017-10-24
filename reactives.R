@@ -5,12 +5,14 @@ cityInput <- reactive({
   if (input$type == "grid") x <- city.grid(input$sqrtnodes, scale = input$scale, mode = input$mode)
   x <- setEdgeSpeed(x, value = input$a_speed)  
   x <- setEdgeCostFactor(x, value = input$a_travel_cost)
+  x <- setEdgeComfort(x, value = input$a_beta5)
   return(x)
 })
 
 populationInput <- reactive({ # Population
   x <- population(input$n, 
                   getNodeCount(cityInput()),
+                  kn = input$kn,
                   lowerbound = input$lowerbound,
                   upperbound = input$upperbound,
                   meanlog = input$meanlog, 
@@ -37,24 +39,30 @@ output$scenarioInput <- renderUI({
 networkWeightsInput <- reactive({
   base_speed <- matrix(input$a_speed, 1, getEdgeCount(cityInput()))
   base_costfactor <- matrix(input$a_travel_cost, 1, getEdgeCount(cityInput()))
+  base_comfort <- matrix(input$a_beta5, 1, getEdgeCount(cityInput()))
   if (input$scenario == "default") {
     alternative_speed <- matrix(input$a_speed, 1, getEdgeCount(cityInput()))
     alternative_costfactor <- matrix(input$a_travel_cost, 1, getEdgeCount(cityInput()))
+    alternative_comfort <- matrix(input$a_beta5, 1, getEdgeCount(cityInput()))
     ids <- as.numeric(input$linkids)
     alternative_speed[1, ids] <- input$b_speed
     alternative_costfactor[1, ids] <- input$b_travel_cost
+    alternative_comfort[1, ids] <- input$b_beta5
   } else if (input$scenario == "permutation") {
     alternative_speed <- matrix(input$a_speed, length(input$linkids), getEdgeCount(cityInput()))
     alternative_costfactor <- matrix(input$a_travel_cost, length(input$linkids), getEdgeCount(cityInput()))
+    alternative_comfort <- matrix(input$a_beta5, length(input$linkids), getEdgeCount(cityInput()))
     ids <- as.numeric(input$linkids)
     for (i in seq_along(ids)) {
       alternative_speed[i, ids[i]] <- input$b_speed
       alternative_costfactor[i, ids[i]] <- input$b_travel_cost
+      alternative_comfort[i, ids[i]] <- input$b_beta5
     }
   }
   speeds <- rbind(base_speed, alternative_speed)
   costfactors <- rbind(base_costfactor, alternative_costfactor)
-  x <- abind(speeds, costfactors, along = 3)
+  comforts <- rbind(base_comfort, alternative_comfort)
+  x <- abind(speeds, costfactors, comforts, along = 3)
   return(x)
 })
 
@@ -102,9 +110,9 @@ economyInput <- reactive({
   x <- economy(cityInput(), 
                populationInput(), 
                networkWeightsInput(),
-               utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$a_beta5, (1-input$tau), input$y, input$TIME)),
+               utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$tau, input$y, input$TIME, input$delta)),
                probability = probabilityClosure(input$delta),
-               spillover = spilloverClosure(input$spillover.eps, getArea(cityInput())))
+               spillover = spilloverClosure(input$spillover.eps, getArea(cityInput()), getDistance(cityInput())))
   return(x)
 })
 

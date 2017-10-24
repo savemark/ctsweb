@@ -118,38 +118,6 @@ setMethod("getEquivalentVariation",
           }
 )
 
-setGeneric("getROAHBenefits", function(object) {standardGeneric("getROAHBenefits")})
-setMethod("getROAHBenefits", 
-          signature = "Economy",
-          definition = function (object) {
-            res <- matrix(nrow = 6, ncol = (length(seq_along(object@sims))))
-            cost.x <- array(getCost(object@sims[[1]]$city), dim = c(getNodeCount(object@sims[[1]]$city), getNodeCount(object@sims[[1]]$city), getNumberOfClasses(object@sims[[1]]$population)))
-            time.x <- array(getTime(object@sims[[1]]$city), dim = c(getNodeCount(object@sims[[1]]$city), getNodeCount(object@sims[[1]]$city), getNumberOfClasses(object@sims[[1]]$population)))
-            cost.x <- cost.x+mapply(function(i) {t(cost.x[ , , i])}, 1:dim(cost.x)[3], SIMPLIFY = "array")
-            time.x <- time.x+mapply(function(i) {t(time.x[ , , i])}, 1:dim(time.x)[3], SIMPLIFY = "array")
-            comfort.x <- 1 # getComfort ....
-            comfort.y <- 1
-            price.x <- array(getVertexPrice(object@sims[[1]]$city), dim = c(getNodeCount(object@sims[[1]]$city), getNodeCount(object@sims[[1]]$city), getNumberOfClasses(object@sims[[1]]$population)))
-            wage.x <- array(rep(t(getWageRate(object@sims[[1]]$population)), each = getNodeCount(object@sims[[1]]$city)), dim = c(getNodeCount(object@sims[[1]]$city), getNodeCount(object@sims[[1]]$city), getNumberOfClasses(object@sims[[1]]$population)))
-            for (i in seq_along(object@sims)) {
-              cost.y <- array(getCost(object@sims[[i]]$city), dim = c(getNodeCount(object@sims[[i]]$city), getNodeCount(object@sims[[i]]$city), getNumberOfClasses(object@sims[[i]]$population)))
-              time.y <- array(getTime(object@sims[[i]]$city), dim = c(getNodeCount(object@sims[[i]]$city), getNodeCount(object@sims[[i]]$city), getNumberOfClasses(object@sims[[i]]$population)))
-              cost.y <- cost.y+mapply(function(i) {t(cost.y[ , , i])}, 1:dim(cost.y)[3], SIMPLIFY = "array")
-              time.y <- time.y+mapply(function(i) {t(time.y[ , , i])}, 1:dim(time.y)[3], SIMPLIFY = "array")
-              price.y <- array(getVertexPrice(object@sims[[i]]$city), dim = c(getNodeCount(object@sims[[i]]$city), getNodeCount(object@sims[[i]]$city), getNumberOfClasses(object@sims[[i]]$population)))
-              wage.y <- array(rep(t(getWageRate(object@sims[[i]]$population)), each = getNodeCount(object@sims[[i]]$city)), dim = c(getNodeCount(object@sims[[i]]$city), getNodeCount(object@sims[[i]]$city), getNumberOfClasses(object@sims[[i]]$population)))
-              roah1 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*(-1)*(cost.y-cost.x)) # marginal value of travel cost is -1*marginal value of ex. income
-              roah2 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*((getMarginalEffect(object@sims[[1]]$population)[ , , , 3]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(time.y-time.x)))
-              roah3 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*((-time.x/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(comfort.y-comfort.x)))
-              roah4 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*((getMarginalEffect(object@sims[[1]]$population)[ , , , 4]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(price.y-price.x)))
-              roah5 <- sum(0.5*(getProbability(object@sims[[1]]$population)+getProbability(object@sims[[i]]$population))*((getMarginalEffect(object@sims[[1]]$population)[ , , , 5]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(wage.y-wage.x)))
-              res[ , i] <- c(roah1, roah2, roah3, roah4, roah5, sum(roah1+roah2+roah3+roah4+roah5))
-            }
-            rownames(res) <- c("Cost", "Time", "Comfort", "Price", "Wage rate", "Sum")
-            return(res)
-          }
-)
-
 setGeneric("getROAHBenefitsWithTax", function(object, tau) {standardGeneric("getROAHBenefitsWithTax")})
 setMethod("getROAHBenefitsWithTax", 
           signature = "Economy",
@@ -369,17 +337,19 @@ setMethod("getDataFrame",
             type <- match.arg(type)
             cityDataFrame <- function(x, id) {
               # x economy
+              kn <- array(rep(getSizeOfEachClass(x@sims[[id]]$population), each = getNodeCount(x@sims[[id]]$city)^2), dim = c(getNodeCount(x@sims[[id]]$city), getNodeCount(x@sims[[id]]$city), getNumberOfClasses(x@sims[[id]]$population)))
               wagerate <- array(rep(t(getWageRate(x@sims[[id]]$population)), each = getNodeCount(x@sims[[id]]$city)), dim = c(getNodeCount(x@sims[[id]]$city), getNodeCount(x@sims[[id]]$city), getNumberOfClasses(x@sims[[id]]$population)))
-              demand <- mapply(function(i) {getProbability(x@sims[[id]]$population)[ , , i]*getArgMax(x@sims[[id]]$population)[ , , i, 4]}, 1:getNumberOfClasses(x@sims[[id]]$population), SIMPLIFY = "array")
+              demand <- mapply(function(i) {getSizeOfEachClass(x@sims[[id]]$population)[i]*getProbability(x@sims[[id]]$population)[ , , i]*getArgMax(x@sims[[id]]$population)[ , , i, 4]}, 1:getNumberOfClasses(x@sims[[id]]$population), SIMPLIFY = "array")
               df <- data.frame(
                 Node = 1:getNodeCount(x@sims[[id]]$city),
                 Supply = getArea(x@sims[[id]]$city),
                 Demand = apply(demand, 1, sum, na.rm = TRUE),
                 Price = getVertexPrice(x@sims[[id]]$city),
-                WorkerShare = apply(getProbability(x@sims[[id]]$population), 2, sum, na.rm = TRUE)/getNumberOfClasses(x@sims[[id]]$population),
-                ResidentShare = apply(getProbability(x@sims[[id]]$population), 1, sum, na.rm = TRUE)/getNumberOfClasses(x@sims[[id]]$population),
-                "Residential Density" = apply(getProbability(x@sims[[id]]$population), 1, sum, na.rm = TRUE)/getArea(x@sims[[id]]$city),
-                Output = apply(getProbability(x@sims[[id]]$population)*wagerate*getArgMax(x@sims[[id]]$population)[ , , , 1], 2, sum, na.rm = TRUE)
+                "Worker Share" = apply(kn*getProbability(x@sims[[id]]$population), 2, sum, na.rm = TRUE)/(sum(getSizeOfEachClass(x@sims[[id]]$population))),
+                "Resident Share" = apply(kn*getProbability(x@sims[[id]]$population), 1, sum, na.rm = TRUE)/(sum(getSizeOfEachClass(x@sims[[id]]$population))),
+                "Worker Density" = apply(kn*getProbability(x@sims[[id]]$population), 2, sum, na.rm = TRUE)/getArea(x@sims[[id]]$city),
+                "Residential Density" = apply(kn*getProbability(x@sims[[id]]$population), 1, sum, na.rm = TRUE)/getArea(x@sims[[id]]$city),
+                Output = apply(kn*getProbability(x@sims[[id]]$population)*wagerate*getArgMax(x@sims[[id]]$population)[ , , , 1], 2, sum, na.rm = TRUE)
               )
               return(df)
             }
@@ -394,7 +364,7 @@ setMethod("getDataFrame",
                                               dim = c(getNodeCount(x@sims[[id]]$city), getNodeCount(x@sims[[id]]$city), getNumberOfClasses(x@sims[[id]]$population))), label.x = "Under. Wage Rate")
               df.wagerate <- array2df(array(rep(t(getWageRate(x@sims[[id]]$population)), each = getNodeCount(x@sims[[id]]$city)), 
                                             dim = c(getNodeCount(x@sims[[id]]$city), getNodeCount(x@sims[[id]]$city), getNumberOfClasses(x@sims[[id]]$population))), label.x = "Wage Rate")
-              df.vot <- array2df(getVoT(x@sims[[id]]$population), label.x = "VoTT")
+              df.vot <- array2df(getVoT(x@sims[[id]]$population), label.x = "VTTS")
               df.prob <- array2df(getProbability(x@sims[[id]]$population), label.x = "Pr")
               df.vou <- array2df(getVoU(x@sims[[id]]$population), label.x = "VoU")
               df.u <- array2df(getUtility(x@sims[[id]]$population), label.x = "Ind utility")
@@ -404,7 +374,7 @@ setMethod("getDataFrame",
               df.x4 <- array2df(getArgMax(x@sims[[id]]$population)[ , , , 4], label.x = "Land use")
               df.x5 <- array2df(getArgMax(x@sims[[id]]$population)[ , , , 5], label.x = "Travel time")
               df <- Reduce(mergeList, list(df.prob, df.wagerate.u, df.wagerate, df.wmaxj, df.vot, df.vou, df.u, df.x1, df.x2, df.x3, df.x4, df.x5))
-              df <- df[ , c("d3", "d1", "d2", "Pr", "Under. Wage Rate", "Wage Rate", "Max. Under. Wage Rate", "VoTT", "VoU", "Ind utility", "Work hours", "Consumption", "Leisure", "Land use", "Travel time")]
+              df <- df[ , c("d3", "d1", "d2", "Pr", "Under. Wage Rate", "Wage Rate", "Max. Under. Wage Rate", "VTTS", "VoU", "Ind utility", "Work hours", "Consumption", "Leisure", "Land use", "Travel time")]
               df <- df[order(df$d3, df$d1, df$d2), ]
               names(df)[1:3] <- c("n", "i", "j")
               row.names(df) <- NULL
@@ -461,14 +431,14 @@ setMethod("getAvarages",
               wagerate <- array(rep(t(getWageRate(object@sims[[i]]$population)), each = getNodeCount(object@sims[[i]]$city)), 
                                 dim = c(getNodeCount(object@sims[[i]]$city), getNodeCount(object@sims[[i]]$city), getNumberOfClasses(object@sims[[i]]$population)))
               wagerate <- sum(apply(wagerate*getProbability(object@sims[[i]]$population), 3, sum))/getNumberOfClasses(object@sims[[i]]$population)
-              vott <- mean(apply(getProbability(object@sims[[i]]$population)*getVoT(object@sims[[i]]$population), c(1,2), sum)/apply(getProbability(object@sims[[i]]$population), c(1,2), sum))
-              workingtime <- sum(apply(getArgMax(object@sims[[i]]$population)[ , , , 1]*getProbability(object@sims[[i]]$population), 3, sum))/getNumberOfClasses(object@sims[[i]]$population)
+              vtts <- sum(getProbability(object@sims[[i]]$population)*getVoT(object@sims[[i]]$population))/getNumberOfClasses(object@sims[[i]]$population)
+              workingtime <- sum(getArgMax(object@sims[[i]]$population)[ , , , 1]*getProbability(object@sims[[i]]$population))/getNumberOfClasses(object@sims[[i]]$population)
               vkt <- sum(odDemand(getProbability(object@sims[[i]]$population))*(getDistance(object@sims[[i]]$city)+t(getDistance(object@sims[[i]]$city))))/getNumberOfClasses(object@sims[[i]]$population)
               traveltime <- sum(odDemand(getProbability(object@sims[[i]]$population))*(getTime(object@sims[[i]]$city)+t(getTime(object@sims[[i]]$city))))/getNumberOfClasses(object@sims[[i]]$population)
               travelcost <- sum(odDemand(getProbability(object@sims[[i]]$population))*(getCost(object@sims[[i]]$city)+t(getCost(object@sims[[i]]$city))))/getNumberOfClasses(object@sims[[i]]$population)
-              res[ , i] <- c(workingtime, wagerate, vkt, traveltime, travelcost, vott) 
+              res[ , i] <- c(workingtime, wagerate, vkt, traveltime, travelcost, vtts) 
             }
-            rownames(res) <- c("Working time", "Wage Rate", "VKT", "Travel time", "Travel cost", "Marginal value of Tr. Time")
+            rownames(res) <- c("Working time", "Wage Rate", "VKT", "Travel time", "Travel cost", "VTTS")
             return(res)
           }
 )

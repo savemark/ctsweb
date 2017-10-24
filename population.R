@@ -1,7 +1,7 @@
 population <- setClass("Population",
                        slots = c(n = "numeric", # number of distinct classes
                                  nodes = "numeric",
-                                 nk = "numeric",
+                                 kn = "numeric",
                                  wagerate = "matrix",
                                  underlying.wagerate = "matrix",
                                  op = "matrix",
@@ -39,7 +39,7 @@ setGeneric("getSizeOfEachClass", function(object) {standardGeneric("getSizeOfEac
 setMethod("getSizeOfEachClass",
           signature = "Population",
           definition = function(object) {
-            return(object@nk)
+            return(object@kn)
           }
 )
 
@@ -163,7 +163,7 @@ setGeneric("setSizeOfEachClass<-", function(object, value) {standardGeneric("set
 setReplaceMethod("setSizeOfEachClass",
                  signature = "Population",
                  definition = function(object, value) {
-                   object@nk <- value
+                   object@kn <- value
                    return(object)
                  }
 )
@@ -273,18 +273,18 @@ rtruncated_log_normal <- function(x, a = - Inf, b = Inf, meanlog, sdlog)
 
 setMethod("initialize",
           signature = "Population",
-          function(.Object, x, y, nk = NULL, lowerbound = 150000, upperbound = 10^6, meanlog = log(336000), sdlog = log(100), 
+          function(.Object, x, y, kn = NULL, lowerbound = 150000, upperbound = 10^6, meanlog = log(336000), sdlog = log(100), 
                    days = 228, hours = 8, omean = 0, osd = 0.25, dmean = 0, dsd = 0.25, ...) {
             setNumberOfClasses(.Object) <- x
             setNodes(.Object) <- y
-            if (is.null(nk)) {
+            if (is.null(kn)) {
               setSizeOfEachClass(.Object) <- rep(1, times = x)
             } else {
-              if (length(nk) == 1) {
-                setSizeOfEachClass(.Object) <- rep(nk, times = x)
+              if (length(kn) == 1) {
+                setSizeOfEachClass(.Object) <- rep(kn, times = x)
               } else {
-                if(length(nk) != x)
-                  stop("The number of classes needs to be equal to the length of the vector of counts (nk) per class.")
+                if(length(kn) != x)
+                  stop("The number of classes needs to be equal to the length of the vector of counts (kn) per class.")
               }
             }
             setWageRate(.Object) <- matrix(rtruncated_log_normal(y*x, a = lowerbound, b = upperbound, meanlog, sdlog)/{hours*days}, x, y)
@@ -305,8 +305,8 @@ setMethod("show",
             cat(" ", "\n",
                 #"Sector id: ", object@sectorid, "\n",
                 "Number of classes: ", object@n, "\n",
-                "Avg. number of individuals per class", mean(object@nk), "\n",
-                "Total population: ", sum(object@nk),"\n",
+                "Avg. number of individuals per class", mean(object@kn), "\n",
+                "Total population: ", sum(object@kn),"\n",
                 "Number of sources of income: ", object@nodes, "\n")
             cat(" ", "\n",
                 "WAGE RATES AND PREFERENCES", "\n",

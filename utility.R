@@ -57,10 +57,10 @@ expectedUtilityClosure <- function(parameter) {
 utilityWrapper <- function(parameter) {
   # This function returns a list of functions
   if(parameter[1]+parameter[2]+parameter[3] != 1)
-    stop("The parameters of the utility function does not sum to 1.")
+    stop("The parameters of the utility function do not sum to 1.")
   if(!all(c(parameter[1], parameter[2], parameter[3]) > 0))
     stop("The parameters of the utility functions must be positive.")
-  if(!(parameter[4] <= 1 && parameter[4] > 0))
+  if(!(parameter[4] < 1 && parameter[4] >= 0))
     stop("The tax parameter is not between 0 and 1.")
   return(
     list(indirectUtility = indirectUtilityClosure(parameter),

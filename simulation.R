@@ -14,7 +14,7 @@ systemOfEquationsClosure <- function(options = list(landuse = c("nonfixed", "fix
               spillover$f(population.scale*pr)*wagerate0-x[-(1:nrow(c))]) # wage rate fixed point
     return(diff)
   }
-  fixed_exogenous <- function(x, c, t, op, dp, utility, wagerate0, area, probability, spillover, scale, population.scale) {
+  fixed_exogenous <- function(x, c, t, comfort, op, dp, utility, wagerate0, area, probability, spillover, scale, population.scale) {
     p <- array(x[1:dim(c)[1]], dim = dim(c))
     w <- array(rep(t(x[-(1:dim(c)[1])]), each = dim(c)[1]), dim = dim(c)) # wage rate
     v <- utility$indirectUtility(p, w, c, t, comfort, op, dp) # indirect utility
@@ -27,7 +27,7 @@ systemOfEquationsClosure <- function(options = list(landuse = c("nonfixed", "fix
               spillover$f(population.scale*pr)*wagerate0-x[-(1:nrow(c))]) # wage rate fixed point
     return(diff)
   }
-  nonfixed_endogenous <- function(x, c, t, op, dp, utility, wagerate0, area, probability, spillover, rural.utility, population.scale) {
+  nonfixed_endogenous <- function(x, c, t, comfort, op, dp, utility, wagerate0, area, probability, spillover, rural.utility, population.scale) {
     # x = (p, w, K)
     zoneids <- 1:nrow(c)
     p <- array(x[zoneids], dim = dim(c))

@@ -62,17 +62,8 @@ column(8,
                   )
                 ),
                 tabsetPanel(
-                  tabPanel("Scenarios",
+                  tabPanel("Options",
                            wellPanel(
-                             p("Base scenario"),
-                             renderInputs("a"),
-                             p("Alternative scenario(s)"),
-                             radioButtons("scenario", "Scenario type:",
-                                          c("Multiple links, one alternative scenario" = "default",
-                                            "Single link, permutations, several alternative scenarios" = "permutation"),
-                                          inline = TRUE),
-                             uiOutput("scenarioInput"),
-                             renderInputs("b"),
                              fluidRow(
                                column(12,
                                       radioButtons("landUseOption", "Land use option",
@@ -97,8 +88,8 @@ column(8,
                                         Run time depends mostly on population size, the number of origins/destinations and if there is a spillover 
                                         effect in the economy. Also note that when the simulation has finished, some of the plots and tables might take some time to load because of the 
                                         large number of entries.")
-                                      )
-                                      ),
+                               )
+                             ),
                              fluidRow(
                                column(4,
                                       actionButton("run_economy", "Run/Re-run", icon("refresh")),
@@ -111,6 +102,19 @@ column(8,
          ),
          column(6,
                 tabsetPanel(
+                  tabPanel("Scenarios",
+                           wellPanel(
+                             p("Base scenario"),
+                             renderInputs("a"),
+                             p("Alternative scenario(s)"),
+                             radioButtons("scenario", "Scenario type:",
+                                          c("Multiple links, one alternative scenario" = "default",
+                                            "Single link, permutations, several alternative scenarios" = "permutation"),
+                                          inline = TRUE),
+                             uiOutput("scenarioInput"),
+                             renderInputs("b")
+                           )
+                  ),
                   tabPanel("Economy",
                            wellPanel(
                              tags$style(type = "text/css", "#economyShow {background-color: rgba(255,255,255,1);}"),
@@ -121,6 +125,24 @@ column(8,
                            wellPanel(
                              tags$style(type = "text/css", "#weightsShow {background-color: rgba(255,255,255,1);}"),
                              verbatimTextOutput("weightsShow")
+                           )
+                  )
+                ),
+                tabsetPanel(
+                  tabPanel("Logit Transport Model",
+                           wellPanel(
+                             fluidRow(
+                               column(4,
+                                      numericInput("sigma", label = "Calibration parameter \\(\\sigma\\)", min = 0.001, value = 0.001, step = 0.001)
+                               )
+                             ),
+                             fluidRow(
+                               column(12,
+                                      p("The parameter \\(\\sigma\\) is used when calcluating the elasticity of total output (pre-tax) with respect to accessibility. 
+                               It needs to be set so that the logit transport model (in the summary) is consistent with avg. travel time in the city. 
+                               This can be adjusted after the simulation has finished.")
+                               )
+                             )
                            )
                   )
                 )
