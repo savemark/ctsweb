@@ -339,7 +339,7 @@ setMethod("initialize",
             .Object@adjacency <- y
             edge.length <- y*rdist(x) # link lengths
             .Object@network <- graph_from_adjacency_matrix(edge.length, mode = mode, weighted = TRUE)
-            tri <- deldir(x[ , 1], x[ , 2], dpl = list(ndx = 2, ndy = 2))
+            tri <- deldir(x = x[ , 1], y = x[ , 2], z = rep(0, length(x[ , 1])), dpl = list(ndx = 2, ndy = 2))
             V(.Object@network)$area <- tri$summary$dir.area[1:length(x[ , 1])]
             .Object@cells <- tri
             # Vertex size
@@ -347,6 +347,7 @@ setMethod("initialize",
             # V(.Object@network)$size <- deg
             V(.Object@network)$x <- x[ , 1] # Node coordinates
             V(.Object@network)$y <- x[ , 2] # Node coordinates
+            V(.Object@network)$z <- rep(0, length(x[ , 1])) # Node coordinates
             E(.Object@network)$length <- E(.Object@network)$weight
             .Object@distance <- distances(.Object@network, mode = "out", weights = E(.Object@network)$length)
             .Object@edgepath <- edgePathMatrix(.Object) # Edge-Path Matrix
@@ -401,6 +402,10 @@ setMethod("plot",
           function(x, y, ...) {
             # Settings
             args <- list(...)
+            edge.color <- args$edge.color
+            if (is.null(edge.color)) {
+              edge.color = "black"
+            }
             edge.label.ids <- ifelse(is.null(args$edge.label.ids) || args$edge.label.ids == TRUE, TRUE, FALSE)
             if (edge.label.ids) {edge.label <- as_ids(E(x@network))} else {edge.label <- NA}
             if (is_directed(x@network)) {edge.curved <- 0.1} else {edge.curved <- 0}
@@ -408,11 +413,12 @@ setMethod("plot",
             e <- length(E(x@network))
             edge.flow <- rep(0, e)
             # Edge color
-            #palf <- brewer.pal(8, "Blues")
-            palf <- colorRampPalette(c("LightSlateGray", "LightSkyBlue"))
-            eb <- edge.betweenness(x@network, weights = E(x@network)$length)
-            neb <- (eb-min(eb))/(max(eb)-min(eb)) # Normalized edge betweenness
-            E(x@network)$edge.color <- palf(8)[as.numeric(cut(eb, breaks = 8))]
+            if (edge.color == "betweenness") {
+              palf <- colorRampPalette(c("LightSlateGray", "LightSkyBlue"))
+              eb <- edge.betweenness(x@network, weights = E(x@network)$length)
+              neb <- (eb-min(eb))/(max(eb)-min(eb)) # Normalized edge betweenness
+              E(x@network)$edge.color <- palf(8)[as.numeric(cut(eb, breaks = 8))]
+            } 
             # Labels
             # edge.labels <- FALSE
             # if (edge.labels) {
@@ -430,7 +436,7 @@ setMethod("plot",
                 bg = "#ffffff"
             )
             plot(0, 0, type = "n", axes = FALSE, xlim = xlim, ylim = ylim, xlab = NA, ylab = NA)
-            axis(1, cex.axis = 0.8)
+            #axis(1, cex.axis = 0.8)
             #axis(2, cex.axis = 0.7)
             plot(x@network, 
                  rescale = FALSE, 
@@ -439,7 +445,7 @@ setMethod("plot",
                  vertex.label = NA,
                  vertex.color = NA,
                  vertex.frame.color = NA,
-                 edge.color = E(x@network)$edge.color,
+                 edge.color = edge.color,
                  edge.arrow.size = 0.4,
                  edge.curved = edge.curved,
                  edge.label = NA,#edge.label,
@@ -448,40 +454,10 @@ setMethod("plot",
             plot(x@cells, 
                  wlines = "tess",
                  add = TRUE, 
-                 col = c(1, 1, 2, 3, 4), 
+                 lty = 1,
+                 col = c(1, "gray", NA, NA, 1), 
                  main = "", 
                  sub = "")
-          }
-)
-
-setMethod("persp3D",
-          signature = c(x = "City", y = "numeric"),
-          function(x, y, ...) {
-            args <- list(...)
-            datalen <- getNodeCount(x)
-            if (is.null(args$linear) | datalen < 4) args$linear <- TRUE else if (args$linear) args$linear <- TRUE else args$linear <- FALSE
-            if ((is.null(args$extrap) & args$linear) | datalen < 4) args$extrap <- FALSE else args$extrap <- TRUE
-            dens <- y
-            surf <- interp(x = getCoordinate(x)[ , 1], # bicubic() from package akima could be an alternative?
-                           y = getCoordinate(x)[ , 2], 
-                           z = dens, 
-                           linear = args$linear, 
-                           extrap = args$extrap)
-            persp3D(x = surf$x, 
-                    y = surf$y,
-                    z = surf$z,
-                    col = gg2.col(),
-                    contour = list(side = "z"),
-                    lightning = "ambient",
-                    resfac = 2,
-                    shade = 0.2,
-                    alpha = 1,
-                    ticktype = "detailed",
-                    cex.axis = 0.75,
-                    colkey = list(cex.axis = 0.75),
-                    zlim = range(surf$z, na.rm = TRUE),
-                    zlab = args$zlab,
-                    sub = args$sub)
           }
 )
 
@@ -539,6 +515,84 @@ setMethod("plot",
                  edge.label = edge.label,
                  edge.label.cex = 0.7,
                  edge.label.color = "black")
+          }
+)
+
+setMethod("persp3D",
+          signature = c(x = "City", y = "numeric"),
+          function(x, y, ...) {
+            args <- list(...)
+            col <- args$col
+            datalen <- getNodeCount(x)
+            if (is.null(args$linear) | datalen < 4) args$linear <- TRUE else if (args$linear) args$linear <- TRUE else args$linear <- FALSE
+            if ((is.null(args$extrap) & args$linear) | datalen < 4) args$extrap <- FALSE else args$extrap <- TRUE
+            dens <- y
+            surf <- interp(x = getCoordinate(x)[ , 1], # bicubic() from package akima could be an alternative?
+                           y = getCoordinate(x)[ , 2], 
+                           z = dens, 
+                           linear = args$linear, 
+                           extrap = args$extrap)
+            persp3D(x = surf$x, 
+                    y = surf$y,
+                    z = surf$z,
+                    col = ramp.col(col = c("white", "black"), n = 100, alpha = 0.5),
+                    contour = list(side = "zmin"),
+                    lightning = "ambient",
+                    resfac = 3,
+                    shade = 0.2,
+                    alpha = 0.5,
+                    ticktype = "detailed",
+                    cex.axis = 0.75,
+                    colkey = list(cex.axis = 0.75),
+                    zlim = range(surf$z, na.rm = TRUE),
+                    zlab = args$zlab,
+                    sub = args$sub,
+                    add = TRUE)
+          }
+)
+
+setMethod("plot3d",
+          signature = "City",
+          function(x, y, aspect = c(1, 1, 1), main = NULL, sub = NULL, zlab = NULL, ...) {
+            cells <- x@cells
+            network <- x@network
+            df <- as_data_frame(network)
+            cells$summary$z[1:getNodeCount(x)] <- y
+            #col <- cm.colors(6)[1 + round(5*(y - min(y))/diff(range(y)))]
+            dirsgs <- cbind(cells$dirsgs[ , 1], cells$dirsgs[ , 2], 0, cells$dirsgs[ , 3], cells$dirsgs[ , 4], 0)
+            net <- cbind(get.vertex.attribute(network, "x", df[ , "from"]), get.vertex.attribute(network, "y", df[ , "from"]), 0, get.vertex.attribute(network, "x", df[ , "to"]), get.vertex.attribute(network, "y", df[ , "to"]), 0)
+            open3d(windowRect = c(100, 100, 1000, 1000), antialias = 2)
+            plot3d(get.vertex.attribute(network, "x"), 
+                   get.vertex.attribute(network, "y"), 
+                   y, 
+                   xlab = "", 
+                   ylab = "", 
+                   zlab = "", 
+                   type = "n",
+                   axes = FALSE, 
+                   smooth = FALSE, 
+                   box = FALSE,
+                   lit = FALSE, 
+                   expand = 1, 
+                   aspect = aspect,                  
+                   xlim = range(cells$summary$x), 
+                   ylim = range(cells$summary$y), 
+                   zlim = range(cells$summary$z[1:getNodeCount(x)]))
+            plot3d(as.mesh3d(cells),
+                   add = TRUE,
+                   alpha = 1, 
+                   col = "black", 
+                   type = "wire", 
+                   axes = FALSE, 
+                   smooth = FALSE, 
+                   box = FALSE,
+                   lit = FALSE, 
+                   expand = 1, 
+                   aspect = aspect)
+            segments3d(x = as.vector(t(dirsgs[ , c(1, 4)])), y = as.vector(t(dirsgs[ , c(2, 5)])), z = as.vector(t(dirsgs[ , c(3, 6)])), color = "gray")
+            segments3d(x = as.vector(t(net[ , c(1, 4)])), y = as.vector(t(net[ , c(2, 5)])), z = as.vector(t(net[ , c(3, 6)])))
+            axes3d(expand = 1)
+            title3d(main = main, sub = sub, xlab = "x", ylab = "y", zlab = zlab)
           }
 )
 

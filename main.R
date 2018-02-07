@@ -31,7 +31,7 @@ column(8,
                                conditionalPanel(
                                  condition = "input.type == 'default'",
                                  column(4,
-                                        numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
+                                        numericInput("scale", label = "Scale", value = 20, min = 10, max = 50, step = 1)
                                  )
                                ),
                                conditionalPanel(
@@ -40,7 +40,7 @@ column(8,
                                         numericInput("nodes", label = "Nodes", value = 30, min = 10, max = 60, step = 1)
                                  ),
                                  column(4,
-                                        numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
+                                        numericInput("scale", label = "Scale", value = 20, min = 10, max = 50, step = 1)
                                  )
                                ),
                                conditionalPanel(
@@ -49,7 +49,7 @@ column(8,
                                         numericInput("sqrtnodes", label = "\\(\\sqrt(\\text{nodes})\\)", value = 2, min = 2, max = 10, step = 1)
                                  ),
                                  column(4,
-                                        numericInput("scale", label = "Scale", value = 40, min = 1, max = 50, step = 1)
+                                        numericInput("scale", label = "Scale", value = 20, min = 10, max = 50, step = 1)
                                  )
                                )
                              ),

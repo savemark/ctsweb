@@ -3,7 +3,7 @@ renderInputs <- function(prefix) {
     column(12, 
            fluidRow(column(4, numericInput(paste0(prefix, "_", "speed"), label = "Speed \\(\\frac{[\\text{km}]}{[\\text{h}]}\\)", min = 10, max = 100, value = 40, step = 1)),
                     column(4, numericInput(paste0(prefix, "_", "travel_cost"), label = "Travel cost per km \\(\\frac{[\\text{currency}]}{[\\text{km}]}\\)", min = 0.5, max = 5, value = 1.5, step = 0.1)),
-                    column(4, numericInput(paste0(prefix, "_", "beta5"), label = "Travel comfort \\(\\beta_\\text{TT}\\)", min = 0, max = 0.2, value = 0.01, step = 0.001))
+                    column(4, numericInput(paste0(prefix, "_", "beta5"), label = "Travel comfort \\(\\beta_\\text{TT}\\)", min = 0, max = 0.2, value = 0.005, step = 0.001))
            )
     )   
   )

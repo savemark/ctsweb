@@ -11,7 +11,7 @@ systemOfEquationsClosure <- function(options = list(landuse = c("nonfixed", "fix
     pr <- probability$density(v) # choice probabilities
     ld <- utility$argmaxUtility(p, w, c, t)[ , , , 4] # land demand
     diff <- c(apply(population.scale*pr*ld, 1, sum, na.rm = TRUE)-area, # excess demand
-              spillover$f(population.scale*pr)*wagerate0-x[-(1:nrow(c))]) # wage rate fixed point
+              spillover$f(population.scale*pr, area = area, cost = c[ , , 1], time = t[ , , 1])*wagerate0-x[-(1:nrow(c))]) # wage rate fixed point
     return(diff)
   }
   fixed_exogenous <- function(x, c, t, comfort, op, dp, utility, wagerate0, area, probability, spillover, scale, population.scale) {
@@ -24,7 +24,7 @@ systemOfEquationsClosure <- function(options = list(landuse = c("nonfixed", "fix
     pr <- pr*{scale/prj} # rescaled probabilities for fixed land-use
     ld <- utility$argmaxUtility(p, w, c, t)[ , , , 4] # land demand
     diff <- c(apply(population.scale*pr*ld, 1, sum, na.rm = TRUE)-area, # excess demand
-              spillover$f(population.scale*pr)*wagerate0-x[-(1:nrow(c))]) # wage rate fixed point
+              spillover$f(population.scale*pr, area = area, cost = c[ , , 1], time = t[ , , 1])*wagerate0-x[-(1:nrow(c))]) # wage rate fixed point
     return(diff)
   }
   nonfixed_endogenous <- function(x, c, t, comfort, op, dp, utility, wagerate0, area, probability, spillover, rural.utility, population.scale) {
@@ -46,7 +46,7 @@ systemOfEquationsClosure <- function(options = list(landuse = c("nonfixed", "fix
     pr <- probability$density(v) # choice probabilities
     ld <- utility$argmaxUtility(p, w.arr, c, t)[ , , , 4] # land demand
     diff <- c(apply(K.arr*pr*ld, 1, sum, na.rm = TRUE)-area0, # excess demand
-              spillover$f(K.arr*pr)*wagerate0-w) # wage rate fixed point
+              spillover$f(K.arr*pr, area = area, cost = c[ , , 1], time = t[ , , 1])*wagerate0-w) # wage rate fixed point
     return(diff)
   }
   switch(paste(landuse, "_", population, sep = ""),
@@ -56,11 +56,14 @@ systemOfEquationsClosure <- function(options = list(landuse = c("nonfixed", "fix
 }
 
 simulation <- function(guess, city, population, utility, probability, spillover, population.scale = getSizeOfEachClass(population), scale = NULL, rural.utility = NULL) {
+  # If the simulation returns warnings it's likely due to negative guesses for roots. If that is the case those warnings may be ignored.
   if (!all(guess > 0)) # guess = land price guess vector
     stop("The land price guess needs to be larger than 0.")
   wagerate0 <- as.vector(getWageRate(population)) # row vector
   c <- array(getCost(city), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population))) # travel cost 
   t <- array(getTime(city), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population))) # travel time 
+  c <- c+mapply(function(i) {t(c[ , , i])}, 1:dim(c)[3], SIMPLIFY = "array") # Home->Work, Work->Home
+  t <- t+mapply(function(i) {t(t[ , , i])}, 1:dim(t)[3], SIMPLIFY = "array") # Home->Work, Work->Home
   comfort <- array(getComfort(city), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population))) # travel time 
   op <- array(apply(t(getOriginPreference(population)), 2, # origin-preference
                     function(x) {matrix(rep(x, length.out = getNodeCount(city)*getNodeCount(city)), getNodeCount(city), getNodeCount(city))}), dim = c(getNodeCount(city), getNodeCount(city), getNumberOfClasses(population)))

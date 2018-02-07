@@ -112,7 +112,7 @@ economyInput <- reactive({
                networkWeightsInput(),
                utilityWrapper(c(input$beta2, input$beta3, input$beta4, input$tau, input$y, input$TIME, input$delta)),
                probability = probabilityClosure(input$delta),
-               spillover = spilloverClosure(input$spillover.eps, getArea(cityInput()), getDistance(cityInput())))
+               spillover = spilloverClosure(input$spillover.eps))
   return(x)
 })
 

@@ -3,14 +3,13 @@ probabilityClosure <- function(parameter, type = c("logit", "maximum"), margin =
   # returns a list with a density function
   type <- match.arg(type)
   logit <- function(x) {
-    d <- dim(x)
-    y <- exp({x-array(rep(apply(x, 3, max), each = d[1]^2), dim = d)}/parameter[1])
-    sfn <- apply(y, margin, sum, na.rm = TRUE)
-    sfn <- array(rep(sfn, each = d[1]^2), dim = d)
-    pr <- y/sfn
+    x.max <- apply(x, margin, max)
+    y <- exp({sweep(x, margin, x.max)}/parameter[1])
+    y.sum <- apply(y, margin, sum, na.rm = TRUE)
+    pr <- sweep(y, margin, y.sum, FUN = "/")
     return(pr)
   }
-  maximum <- function(x, margin = 3) {
+  maximum <- function(x) {
     maxIndicator <- function(x) {
       ifelse(x == max(x), 1, 0)
     }

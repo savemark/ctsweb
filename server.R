@@ -1,24 +1,13 @@
-library(shiny)
-library(BB)
-library(igraph)
-library(plyr)
-library(deldir)
-library(truncdist)
-library(lattice)
-library(fields)
-library(mgcv)
-library(arrayhelpers)
-library(plotrix)
-library(akima)
-library(plot3D)
-library(tidyr)
-library(ggplot2)
-library(ineq)
-library(shinythemes)
-library(RColorBrewer)
-library(reshape2)
-library(gtools)
-library(abind)
+packages <- c("shiny", "BB", "igraph", "plyr", "deldir", "truncdist", "lattice", "fields", "mgcv", "arrayhelpers", 
+              "plotrix", "akima", "plot3D", "tidyr", "ggplot2", "ineq", "shinythemes", "RColorBrewer", "reshape2", "stringi", 
+              "gtools", "rgl", "abind")
+
+for (package in packages) {
+  if (!require(package, character.only = TRUE, quietly = FALSE)) {
+    install.packages(package)
+    library(package, character.only = TRUE)
+  }
+}
 
 source("data.R")
 source("city.R")

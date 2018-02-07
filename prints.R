@@ -8,7 +8,7 @@ output$weightsShow <- renderPrint({
 
 output$summary_economy <- renderPrint({
   if (is.null(simulateEconomyInput())) return(invisible(NULL))
-  digits <- 2
+  digits <- 4
   cat("[NON-FIXED LAND-USE RESULTS] \n \n")
   if (input$showConvergenceMessage) getConvergenceMessages(simulateEconomyInput())
   cat("\n Elasticities of VKT w.r.t. ... \n")
@@ -23,8 +23,8 @@ output$summary_economy <- renderPrint({
   print(getTopDownBenefits(simulateEconomyInput(), parameters$tau), digits = digits) 
   cat("\n Rank of scenarios \n")
   print(getRanking(simulateEconomyInput(), parameters$tau), digits = digits)
-  cat("\n Avarages \n")
-  print(getAvarages(simulateEconomyInput()), digits = digits)
+  cat("\n Averages \n")
+  print(getAverages(simulateEconomyInput()), digits = digits)
   cat("\n Logit Transport Model \n")
   print(getLogitTransportModel(simulateEconomyInput(), input$sigma), digits = digits) 
   cat("\n Inequality measures, post-taxation \n")
@@ -33,7 +33,7 @@ output$summary_economy <- renderPrint({
 
 output$summary_economy_fixed <- renderPrint({
   if (is.null(simulateEconomyFixedInput())) return(invisible(NULL))
-  digits <- 2
+  digits <- 4
   cat("[FIXED LAND-USE RESULTS] \n \n")
   if (input$showConvergenceMessage) getConvergenceMessages(simulateEconomyFixedInput())
   cat("\n Elasticities of VKT w.r.t. ... \n")
@@ -48,8 +48,8 @@ output$summary_economy_fixed <- renderPrint({
   print(getTopDownBenefits(simulateEconomyFixedInput(), parameters$tau), digits = digits)  
   cat("\n Rank of scenarios \n")
   print(getRanking(simulateEconomyFixedInput(), parameters$tau), digits = digits)
-  cat("\n Avarages \n")
-  print(getAvarages(simulateEconomyFixedInput()), digits = digits)
+  cat("\n Averages \n")
+  print(getAverages(simulateEconomyFixedInput()), digits = digits)
   cat("\n Logit Transport Model \n")
   print(getLogitTransportModel(simulateEconomyFixedInput(), input$sigma), digits = digits) 
   cat("\n Inequality measures, post-taxation \n")

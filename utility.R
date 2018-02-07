@@ -6,19 +6,28 @@ indirectUtilityClosure <- function(parameter) {
   # parameter[5] = y (exogenous income)
   # parameter[6] = Time (16 or 24)
   # parameter[7] = sigma (variance parameter)
-  # If the function returns NaNs check if cost c and time t are of appropriate sizes
+  # If the function returns NaNs check if cost c and time t are of appropriate scales
   function(p, w, c, t, comfort, op, dp) {
-    c <- c+mapply(function(i) {t(c[ , , i])}, 1:dim(c)[3], SIMPLIFY = "array")
-    t <- t+mapply(function(i) {t(t[ , , i])}, 1:dim(t)[3], SIMPLIFY = "array")
-    v <- -log(((1-parameter[4])*w)^parameter[2]*{p^parameter[3]})+log((1-parameter[4])*w*(parameter[6]-t)+parameter[5]-c)-comfort*t+op+dp+log({parameter[1]^parameter[1]}*{parameter[2]^parameter[2]}*{parameter[3]^parameter[3]})
-    return(v)
+    #tryCatch(
+      #{
+        v <- -log(((1-parameter[4])*w)^parameter[2]*{p^parameter[3]})+log((1-parameter[4])*w*(parameter[6]-t)+parameter[5]-c)-comfort*t+op+dp+log({parameter[1]^parameter[1]}*{parameter[2]^parameter[2]}*{parameter[3]^parameter[3]})
+      #},
+      #warning = function(warn) {
+        #print(paste(min(w)))
+        #v <- -log(((1-parameter[4])*w)^parameter[2]*{p^parameter[3]})+log((1-parameter[4])*w*(parameter[6]-t)+parameter[5]-c)-comfort*t+op+dp+log({parameter[1]^parameter[1]}*{parameter[2]^parameter[2]}*{parameter[3]^parameter[3]})
+        #return(v)
+      #},
+      #error = function(err) {
+        #print(paste(min(w)))
+        #v <- -log({((1-parameter[4])*w)^parameter[2]}*{p^parameter[3]})+log((1-parameter[4])*w*(parameter[6]-t)+parameter[5]-c)-comfort*t+op+dp+log({parameter[1]^parameter[1]}*{parameter[2]^parameter[2]}*{parameter[3]^parameter[3]})
+        #return(v)
+      #}
+    #)
   }
 }
 
 argmaxUtilityClosure <- function(parameter) {
   function(p, w, c, t) {
-    c <- c+mapply(function(i) {t(c[ , , i])}, 1:dim(c)[3], SIMPLIFY = "array")
-    t <- t+mapply(function(i) {t(t[ , , i])}, 1:dim(t)[3], SIMPLIFY = "array")
     x <- array(c(parameter[6]-t-{parameter[2]/{(1-parameter[4])*w}}*{(1-parameter[4])*w*(parameter[6]-t)+parameter[5]-c}, # Optimal working hours
                  parameter[1]*{(1-parameter[4])*w*{parameter[6]-t}+parameter[5]-c}, # Optimal consumption
                  {parameter[2]/{(1-parameter[4])*w}}*{(1-parameter[4])*w*{parameter[6]-t}+parameter[5]-c}, # Optimal leisure
@@ -33,8 +42,6 @@ marginalEffectsClosure <- function(parameter) {
   function(x, p, w, c, t, comfort) {
     # x argmax
     # note that marginal utility of income is minus marginal utility of travel cost
-    c <- c+mapply(function(i) {t(c[ , , i])}, 1:dim(c)[3], SIMPLIFY = "array")
-    t <- t+mapply(function(i) {t(t[ , , i])}, 1:dim(t)[3], SIMPLIFY = "array")
     dvdx <- array(c(parameter[1]/x[ , , , 2], # marginal utility of income
                     parameter[2]/x[ , , , 3], # marginal utility of time
                     -parameter[2]/x[ , , , 3]-comfort, # marginal utility of travel time
@@ -46,10 +53,9 @@ marginalEffectsClosure <- function(parameter) {
 }
 
 expectedUtilityClosure <- function(parameter) {
-  function(v) {
-    maxu <- apply(v, 3, max)
-    maxu.arr <- array(rep(maxu, each = nrow(v)^2), dim = dim(v))
-    logsum <- maxu+parameter[7]*log(apply(exp((v-maxu.arr)/parameter[7]), 3, sum))
+  function(v, margin = 3) {
+    u.max <- apply(v, margin, max)
+    logsum <- u.max+parameter[7]*log(apply(exp({sweep(v, margin, u.max)}/parameter[7]), margin, sum))
     return(logsum)
   }
 }

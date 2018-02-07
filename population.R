@@ -104,7 +104,7 @@ setGeneric("getVoT", function(object) {standardGeneric("getVoT")})
 setMethod("getVoT",
           signature = "Population",
           definition = function(object) {
-            return(object@lambda[ , , , 3]/object@lambda[ , , , 1])
+            return(-object@lambda[ , , , 3]/object@lambda[ , , , 1])
           }
 )
 

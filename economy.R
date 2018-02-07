@@ -100,16 +100,17 @@ setGeneric("getEquivalentVariation", function(object, sigma) {standardGeneric("g
 setMethod("getEquivalentVariation", 
           signature = "Economy",
           definition = function (object, sigma) {
+            dim1 <- c(getNodeCount(object@sims[[1]]$city), getNodeCount(object@sims[[1]]$city), getNumberOfClasses(object@sims[[1]]$population))
             res <- matrix(nrow = 1, ncol = (length(seq_along(object@sims))))
             # We need to subtract the maximum of the indrect utilities for each choice set, 
             # otherwise the logsum will not be possible to calculate (because it will be too large)
             maxu.x <- apply(getUtility(object@sims[[1]]$population), 3, max)
-            maxu.xa <- array(rep(maxu.x, each = getNodeCount(object@sims[[1]]$city)^2), dim = c(getNodeCount(object@sims[[1]]$city), getNodeCount(object@sims[[1]]$city), getNumberOfClasses(object@sims[[1]]$population)))
-            logsum.x <- maxu.x+sigma*log(apply(exp((getUtility(object@sims[[1]]$population)-maxu.xa)/sigma), 3, sum))
+            maxu.xa <- array(rep(maxu.x, each = getNodeCount(object@sims[[1]]$city)^2), dim = dim1)
+            logsum.x <- getSizeOfEachClass(object@sims[[1]]$population)*(maxu.x+sigma*log(apply(exp((getUtility(object@sims[[1]]$population)-maxu.xa)/sigma), 3, sum)))
             for (i in seq_along(object@sims)) {
               maxu.y <- apply(getUtility(object@sims[[i]]$population), 3, max)
               maxu.ya <- array(rep(maxu.y, each = getNodeCount(object@sims[[i]]$city)^2), dim = c(getNodeCount(object@sims[[i]]$city), getNodeCount(object@sims[[i]]$city), getNumberOfClasses(object@sims[[i]]$population)))
-              logsum.y <- maxu.y+sigma*log(apply(exp((getUtility(object@sims[[i]]$population)-maxu.ya)/sigma), 3, sum))
+              logsum.y <- getSizeOfEachClass(object@sims[[i]]$population)*(maxu.y+sigma*log(apply(exp((getUtility(object@sims[[i]]$population)-maxu.ya)/sigma), 3, sum)))
               ev <- (logsum.y-logsum.x)/(apply(getProbability(object@sims[[1]]$population)*getMarginalEffect(object@sims[[1]]$population)[ , , , 1], 3, sum))
               res[ , i] <- sum(ev)
             }
@@ -147,10 +148,10 @@ setMethod("getROAHBenefitsWithTax",
               wagerate.y <- array(rep(t(getWageRate(object@sims[[i]]$population)), each = getNodeCount(object@sims[[i]]$city)), dim = dimi)
               tax.y <- sum(tau*wagerate.y*getArgMax(object@sims[[i]]$population)[ , , , 1]*kni*getProbability(object@sims[[i]]$population))
               roah1 <- sum(0.5*(kn1*getProbability(object@sims[[1]]$population)+kni*getProbability(object@sims[[i]]$population))*(-1)*(cost.y-cost.x)) # marginal value of travel cost is -1*marginal value of exog. income
-              roah2 <- sum(0.5*(kn1*getProbability(object@sims[[1]]$population)+kni*getProbability(object@sims[[i]]$population))*((getMarginalEffect(object@sims[[1]]$population)[ , , , 3]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(time.y-time.x)))
-              roah3 <- sum(0.5*(kn1*getProbability(object@sims[[1]]$population)+kni*getProbability(object@sims[[i]]$population))*((-time.x/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(comfort.y-comfort.x)))
-              roah4 <- sum(0.5*(kn1*getProbability(object@sims[[1]]$population)+kni*getProbability(object@sims[[i]]$population))*((getMarginalEffect(object@sims[[1]]$population)[ , , , 4]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])*(price.y-price.x)))
-              roah5 <- sum(0.5*(kn1*getProbability(object@sims[[1]]$population)*getMarginalEffect(object@sims[[1]]$population)[ , , , 5]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1]+kni*getProbability(object@sims[[i]]$population)*getMarginalEffect(object@sims[[i]]$population)[ , , , 5]/getMarginalEffect(object@sims[[i]]$population)[ , , , 1])*((1/1)*(wagerate.y-wagerate.x)))
+              roah2 <- sum(0.5*(kn1*getProbability(object@sims[[1]]$population)*getMarginalEffect(object@sims[[1]]$population)[ , , , 3]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1]+kni*getProbability(object@sims[[i]]$population)*getMarginalEffect(object@sims[[i]]$population)[ , , , 3]/getMarginalEffect(object@sims[[i]]$population)[ , , , 1])*(time.y-time.x))
+              roah3 <- sum(0.5*(kn1*getProbability(object@sims[[1]]$population)*(-time.x/getMarginalEffect(object@sims[[1]]$population)[ , , , 1])+kni*getProbability(object@sims[[i]]$population)*(-time.y/getMarginalEffect(object@sims[[i]]$population)[ , , , 1]))*(comfort.y-comfort.x))
+              roah4 <- sum(0.5*(kn1*getProbability(object@sims[[1]]$population)*getMarginalEffect(object@sims[[1]]$population)[ , , , 4]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1]+kni*getProbability(object@sims[[i]]$population)*getMarginalEffect(object@sims[[i]]$population)[ , , , 4]/getMarginalEffect(object@sims[[i]]$population)[ , , , 1])*(price.y-price.x))
+              roah5 <- sum(0.5*(kn1*getProbability(object@sims[[1]]$population)*getMarginalEffect(object@sims[[1]]$population)[ , , , 5]/getMarginalEffect(object@sims[[1]]$population)[ , , , 1]+kni*getProbability(object@sims[[i]]$population)*getMarginalEffect(object@sims[[i]]$population)[ , , , 5]/getMarginalEffect(object@sims[[i]]$population)[ , , , 1])*(wagerate.y-wagerate.x))
               tax.diff <- tax.y-tax.x
               res[ , i] <- c(roah1, roah2, roah3, roah4, roah5, tax.diff, sum(roah1+roah2+roah3+roah4+roah5+tax.diff))
             }
@@ -167,14 +168,16 @@ setMethod("getTopDownBenefits",
             dim1 <- c(getNodeCount(object@sims[[1]]$city), getNodeCount(object@sims[[1]]$city), getNumberOfClasses(object@sims[[1]]$population))
             kn1 <- array(rep(getSizeOfEachClass(object@sims[[1]]$population), each = getNodeCount(object@sims[[1]]$city)^2), dim = dim1)
             home.x <- apply(mapply(function(j) {getSizeOfEachClass(object@sims[[1]]$population)[j]*getProbability(object@sims[[1]]$population)[ , , j]}, 1:getNumberOfClasses(object@sims[[1]]$population), SIMPLIFY = "array"), 1, sum, na.rm = TRUE)
-            lor.x <- sum(getArea(object@sims[[1]]$city)*getVertexPrice(object@sims[[1]]$city)) # /home.x
+            price.x <- array(getVertexPrice(object@sims[[1]]$city), dim = dim1)
+            lor.x <- sum(kn1*getProbability(object@sims[[1]]$population)*getArgMax(object@sims[[1]]$population)[ , , , 4]*price.x)
             wagerate.x <- array(rep(t(getWageRate(object@sims[[1]]$population)), each = getNodeCount(object@sims[[1]]$city)), dim = dim1)
             tax.x <- sum(tau*wagerate.x*getArgMax(object@sims[[1]]$population)[ , , , 1]*kn1*getProbability(object@sims[[1]]$population))
             for (i in seq_along(object@sims)) {
               dimi <- c(getNodeCount(object@sims[[i]]$city), getNodeCount(object@sims[[i]]$city), getNumberOfClasses(object@sims[[i]]$population))
               kni <- array(rep(getSizeOfEachClass(object@sims[[i]]$population), each = getNodeCount(object@sims[[i]]$city)^2), dim = dimi)
               home.y <- apply(mapply(function(j) {getSizeOfEachClass(object@sims[[i]]$population)[j]*getProbability(object@sims[[i]]$population)[ , , j]}, 1:getNumberOfClasses(object@sims[[i]]$population), SIMPLIFY = "array"), 1, sum, na.rm = TRUE)
-              lor.y <- sum(getArea(object@sims[[i]]$city)*getVertexPrice(object@sims[[i]]$city)) # /home.y
+              price.y <- array(getVertexPrice(object@sims[[i]]$city), dim = dimi)
+              lor.y <- sum(kni*getProbability(object@sims[[i]]$population)*getArgMax(object@sims[[i]]$population)[ , , , 4]*price.y)
               wagerate.y <- array(rep(t(getWageRate(object@sims[[i]]$population)), each = getNodeCount(object@sims[[i]]$city)), dim = dimi)
               tax.y <- sum(tau*wagerate.y*getArgMax(object@sims[[i]]$population)[ , , , 1]*kni*getProbability(object@sims[[i]]$population))
               base <- sum((kni*getProbability(object@sims[[i]]$population)*getArgMax(object@sims[[i]]$population)[ , , , 1]-kn1*getProbability(object@sims[[1]]$population)*getArgMax(object@sims[[1]]$population)[ , , , 1])*(1-tau)*wagerate.x)
@@ -422,8 +425,8 @@ setMethod("getDataFrame",
           }
 )
 
-setGeneric("getAvarages", function(object) {standardGeneric("getAvarages")})
-setMethod("getAvarages", 
+setGeneric("getAverages", function(object) {standardGeneric("getAverages")})
+setMethod("getAverages", 
           signature = "Economy",
           definition = function (object) {
             res <- matrix(nrow = 6, ncol = length(seq_along(object@sims)))
@@ -536,18 +539,6 @@ setMethod("plot",
                         main = NULL,
                         xlab = xlab
                   )
-                  # lines(density(ifelse(getWageRate(x@sims[[i]]$population)>getWageRate(x@sims[[1]]$population),
-                  #                      getWageRate(x@sims[[i]]$population),
-                  #                      getWageRate(x@sims[[1]]$population)
-                  # ), 
-                  # weights = eval(weight)),
-                  # col = heat.colors(length(x@sims))[i],
-                  # main = NULL,
-                  # xlab = xlab
-                  # )
-                  # legend("top", 
-                  #        legend = as.character(1:length(x@sims)), 
-                  #        lty = c(1,1), col = heat.colors(length(x@sims)))
                 }
               } else if (type == "income") {
                 for (i in seq_along(x@sims)) {
@@ -600,13 +591,15 @@ setMethod("persp3D",
                       ...)
             }
             residence <- function(x, sid, ...) {
+              kn <- array(rep(getSizeOfEachClass(x@sims[[sid]]$population), each = getNodeCount(x@sims[[sid]]$city)^2), dim = c(getNodeCount(x@sims[[sid]]$city), getNodeCount(x@sims[[sid]]$city), getNumberOfClasses(x@sims[[sid]]$population)))
               persp3D(x@sims[[sid]]$city,
-                      apply(getProbability(x@sims[[sid]]$population), 1, sum, na.rm = TRUE)/getArea(x@sims[[sid]]$city),
+                      apply(kn*getProbability(x@sims[[sid]]$population), 1, sum, na.rm = TRUE)/getArea(x@sims[[sid]]$city),
                       ...)
             }
             work <- function(x, sid, ...) {
+              kn <- array(rep(getSizeOfEachClass(x@sims[[sid]]$population), each = getNodeCount(x@sims[[sid]]$city)^2), dim = c(getNodeCount(x@sims[[sid]]$city), getNodeCount(x@sims[[sid]]$city), getNumberOfClasses(x@sims[[sid]]$population)))
               persp3D(x@sims[[sid]]$city,
-                      apply(getProbability(x@sims[[sid]]$population), 2, sum, na.rm = TRUE)/getArea(x@sims[[sid]]$city),
+                      apply(kn*getProbability(x@sims[[sid]]$population), 2, sum, na.rm = TRUE)/getArea(x@sims[[sid]]$city),
                       ...)
             }
             income <- function(x, sid, ...) {
