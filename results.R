@@ -109,16 +109,16 @@ column(12,
                              uiOutput("scenario_ID_base"),
                              tabsetPanel(
                                tabPanel("City",
-                                        dataTableOutput("simulateEconomyCityA")
+                                        DT::DTOutput("simulateEconomyCityA")
                                ),
                                tabPanel("Paths",
                                         br(),
                                         p("Note that Total cost (time) is the sum of link costs (times) and within-zone costs (times)."),
                                         br(),
-                                        dataTableOutput("simulateEconomyPathA")
+                                        DT::DTOutput("simulateEconomyPathA")
                                ),
                                tabPanel("Population",
-                                        dataTableOutput("simulateEconomyPopulationA")
+                                        DT::DTOutput("simulateEconomyPopulationA")
                                )
                              )
                     ),
@@ -126,16 +126,16 @@ column(12,
                              uiOutput("scenario_ID_alt"),
                              tabsetPanel(
                                tabPanel("City",
-                                        dataTableOutput("simulateEconomyCityB")
+                                        DT::DTOutput("simulateEconomyCityB")
                                ),
                                tabPanel("Paths",
                                         br(),
                                         p("Note that Total cost (time) is the sum of link costs (times) and within-zone costs (times)."),
                                         br(),
-                                        dataTableOutput("simulateEconomyPathB")
+                                        DT::DTOutput("simulateEconomyPathB")
                                ),
                                tabPanel("Population",
-                                        dataTableOutput("simulateEconomyPopulationB")
+                                        DT::DTOutput("simulateEconomyPopulationB")
                                )
                              )
                     ),
@@ -143,16 +143,16 @@ column(12,
                              uiOutput("scenario_ID_fixed"),
                              tabsetPanel(
                                tabPanel("City",
-                                        dataTableOutput("simulateEconomyCityC")
+                                        DT::DTOutput("simulateEconomyCityC")
                                ),
                                tabPanel("Paths",
                                         br(),
                                         p("Note that Total cost (time) is the sum of link costs (times) and within-zone costs (times)."),
                                         br(),
-                                        dataTableOutput("simulateEconomyPathC")
+                                        DT::DTOutput("simulateEconomyPathC")
                                ),
                                tabPanel("Population",
-                                        dataTableOutput("simulateEconomyPopulationC")
+                                        DT::DTOutput("simulateEconomyPopulationC")
                                )
                              )
                     )

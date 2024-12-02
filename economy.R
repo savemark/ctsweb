@@ -400,11 +400,11 @@ setMethod("getDataFrame",
                   m[[as.path.id(x@sims[[id]]$city, from = i, to = j), 1]] <- list(as_ids(edgepathlist[[i]][[j]]))
                   pathids[as.path.id(x@sims[[id]]$city, from = i, to = j), 1] <- as.path.id(x@sims[[id]]$city, from = i, to = j)
                   cost[[as.path.id(x@sims[[id]]$city, from = i, to = j), 1]] <- as.list(
-                    (getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]*get.edge.attribute(getGraph(x@sims[[id]]$city), "cost"))[getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]*get.edge.attribute(getGraph(x@sims[[id]]$city), "cost")>0])
-                  totcost[as.path.id(x@sims[[id]]$city, i, j), 1] <- getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]%*%get.edge.attribute(getGraph(x@sims[[id]]$city), "cost")+getCost(x@sims[[id]]$city)[i, i]+getCost(x@sims[[id]]$city)[j, j]
+                    (getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]*edge_attr(getGraph(x@sims[[id]]$city), "cost"))[getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]*edge_attr(getGraph(x@sims[[id]]$city), "cost")>0])
+                  totcost[as.path.id(x@sims[[id]]$city, i, j), 1] <- getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]%*%edge_attr(getGraph(x@sims[[id]]$city), "cost")+getCost(x@sims[[id]]$city)[i, i]+getCost(x@sims[[id]]$city)[j, j]
                   time[[as.path.id(x@sims[[id]]$city, from = i, to = j), 1]] <- as.list(
-                    (getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]*get.edge.attribute(getGraph(x@sims[[id]]$city), "time"))[getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]*get.edge.attribute(getGraph(x@sims[[id]]$city), "time")>0])
-                  tottime[as.path.id(x@sims[[id]]$city, i, j), 1] <- getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]%*%get.edge.attribute(getGraph(x@sims[[id]]$city), "time")+getTime(x@sims[[id]]$city)[i, i]+getTime(x@sims[[id]]$city)[j, j]
+                    (getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]*edge_attr(getGraph(x@sims[[id]]$city), "time"))[getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]*edge_attr(getGraph(x@sims[[id]]$city), "time")>0])
+                  tottime[as.path.id(x@sims[[id]]$city, i, j), 1] <- getEdgePath(x@sims[[id]]$city)[, as.path.id(x@sims[[id]]$city, i, j)]%*%edge_attr(getGraph(x@sims[[id]]$city), "time")+getTime(x@sims[[id]]$city)[i, i]+getTime(x@sims[[id]]$city)[j, j]
                 }
               }
               df <- data.frame(origin = rep(1:v, each = v), 

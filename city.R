@@ -455,7 +455,7 @@ setMethod("plot",
                  wlines = "tess",
                  add = TRUE, 
                  lty = 1,
-                 col = c(1, "gray", NA, NA, 1), 
+                 cmpnt_col = c(1, "gray", NA, NA, 1), 
                  main = "", 
                  sub = "")
           }
@@ -493,7 +493,7 @@ setMethod("plot",
                 }
               }
             }
-            x@network <- set.edge.attribute(x@network, "color", index = E(x@network), edge.color)
+            x@network <- set_edge_attr(x@network, "color", index = E(x@network), edge.color)
             x@network <- set.vertex.attribute(x@network, "frame.color", index = V(x@network), vertex.frame.color)
             vertex.size <- {colSums(y@od)-min(colSums(y@od))+1}*{10/(max(colSums(y@od))-min(colSums(y@od)))}
             edge.width <- {edge.width-min(edge.width)+1}*{10/(max(edge.width)-min(edge.width))}
